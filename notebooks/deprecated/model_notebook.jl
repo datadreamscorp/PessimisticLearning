@@ -20,6 +20,12 @@ using StatsBase, StatsPlots
 # ╔═╡ 123588bb-700b-4306-a078-48ca29b8c1d0
 using Plots
 
+# ╔═╡ 76c30915-412b-424f-bf8e-0bf76fac15cb
+using PlutoUI
+
+# ╔═╡ 5d10a9ad-016d-43fc-bc0d-a4fbb7f35263
+using PlutoReport
+
 # ╔═╡ 03251ac1-672d-43bc-94eb-87c938745d69
 import VarianceAverseSocialLearning as VA
 
@@ -188,7 +194,7 @@ function simulate_throws_v2(u, λ, stake;
 		rate = u / rand( Pareto(λ) )
 		for j in 1:rounds
 			if rand() < rate
-				log_capital = log(1 + stake) + log_capital + log_benefit
+				log_capital = log(1 + stake) + log_benefit + log_capital 
 			else
 				log_capital = log(1 - stake) + log_capital
 			end
@@ -200,13 +206,16 @@ function simulate_throws_v2(u, λ, stake;
 end
 
 # ╔═╡ 60acd41f-2208-4438-84b0-3792f98c28ff
-λ2 = 1.5; n2 = 20; tries = 15; δ = 0.001
+λ2 = 2; n2 = 20; tries = 15; δ = 0.05; u2=1.0
 
 # ╔═╡ 3233c69d-fcac-44ad-b2dd-6a6c0f8e4157
-histogram( rand(Pareto(λ2), 1000), legend=false )
+histogram( 1 ./ rand(Pareto(λ2), 10000), legend=false)
+
+# ╔═╡ a5acf70b-ff48-473d-a028-e6599c0e7fd3
+histogram( rand(Pareto(λ2), 10000), legend=false)
 
 # ╔═╡ 72068b7d-648a-456e-8d78-2e94e475c475
-sim_rates2 = VA.simulate_success_rates(λ=λ2, n=n2, u=u)
+sim_rates2 = VA.simulate_success_rates(λ=λ2, n=n2, u=u2)
 
 # ╔═╡ 600bf9be-7dfa-4f5c-b059-8bfb57dff209
 estimates2 = calculate_estimates(n2, tries, sim_rates2)
@@ -215,7 +224,7 @@ estimates2 = calculate_estimates(n2, tries, sim_rates2)
 estimated_stakes = calculate_stake.(estimates2)
 
 # ╔═╡ 402fe706-80d1-4ab9-a96e-e5a4daee8a4b
-deltas = 1:1:5
+deltas = 1:1:50
 
 # ╔═╡ c5a1e197-eeec-46ac-a810-71e936238cb4
 pweighted_stakes = [rdeu_power(estimated_stakes, d) for d in deltas]
@@ -228,15 +237,78 @@ sims = [
 
 # ╔═╡ 479b5375-b49d-4cb8-8e40-55a91c7e28bb
 begin
-	histogram( (1 + δ).^sims[1], alpha=0.5, label="δ = $(deltas[1])" )
+	histogram( (1 + δ).^sims[1], alpha=0.5, label="δ = $(deltas[1])", xlab="payoff" )
 	#histogram!( (1 + δ).^sims[2], alpha=0.5, label="δ = $(deltas[2])" )
 	histogram!( (1 + δ).^sims[3], alpha=0.5, label="δ = $(deltas[3])" )
 	#histogram!( (1 + δ).^sims[4], alpha=0.5, label="δ =  $(deltas[4])" )
 	histogram!( (1 + δ).^sims[5], alpha=0.5, label="δ =  $(deltas[5])" )
+	vline!([1.0], label="survival line")
 end
 
 # ╔═╡ d50b1702-1b47-46d5-9b13-0316d600b934
-survivals = [filter(x -> x > 0, sims[i]) |> length for i in deltas]
+begin
+	survivals = [
+		filter(x -> x ≥ 0, sims[i]) |> length for i in deltas
+	]
+	plot( 
+		survivals ./ 1000,
+		legend=false,
+		xlab="degree of pessimistic weighting (δ)",
+		ylab="proportion of surviving population",
+		lw=2
+	)
+	#scatter!(
+	#	survivals ./ 1000,
+	#	legend=false,
+	#)
+end
+
+# ╔═╡ 9b51ee55-b447-4249-b7fd-e5b0e0b4b382
+begin
+	avg_payoff = [ mean( (1 + δ).^sims[i] ) for i in deltas ]
+	median_payoff = [ median( (1 + δ).^sims[i] ) for i in deltas ]
+end
+
+# ╔═╡ 7f15aa35-a99c-4730-9e29-6812562b2972
+begin
+	plot(
+		avg_payoff,
+		xlab="degree of pessimistic weighting (δ)",
+		ylab="payoff",
+		lw=2,
+		label="mean payoff",
+		legend=:bottomright
+	)
+	plot!(
+		median_payoff,
+		lw=2,
+		label="median payoff"
+	)
+end
+
+# ╔═╡ 9cfe4d78-b0b3-40c3-b866-2b0f3b4aef1f
+begin
+	d = 0.3
+	avg_payoff02 = [ mean( (1 + (δ+d)).^sims[i] ) for i in deltas ]
+	median_payoff02 = [ median( (1 + (δ+d)).^sims[i] ) for i in deltas ]
+end 
+
+# ╔═╡ 21fd3d8f-32ef-42db-a8d9-71cc23796cf9
+begin
+	plot(
+		avg_payoff02,
+		xlab="degree of pessimistic weighting (δ)",
+		ylab="payoff",
+		lw=2,
+		label="mean payoff",
+		legend=:topright
+	)
+	plot!(
+		median_payoff02,
+		lw=2,
+		label="median payoff"
+	)
+end
 
 # ╔═╡ Cell order:
 # ╠═c23c8120-ade5-11ed-0860-f71646149c4f
@@ -244,6 +316,8 @@ survivals = [filter(x -> x > 0, sims[i]) |> length for i in deltas]
 # ╠═a631fc0c-2b68-4e46-8f01-b2397627f9cc
 # ╠═c7b956a1-efba-4216-abb7-6ccac953f552
 # ╠═123588bb-700b-4306-a078-48ca29b8c1d0
+# ╠═76c30915-412b-424f-bf8e-0bf76fac15cb
+# ╠═5d10a9ad-016d-43fc-bc0d-a4fbb7f35263
 # ╠═4b1b35dc-d9c5-4d8e-a416-735bd6ec6a0e
 # ╠═e32e2113-02e2-47e8-831c-f1f18ee38754
 # ╠═d51d529a-570a-4c6e-bdf2-ef6b80341aed
@@ -275,6 +349,7 @@ survivals = [filter(x -> x > 0, sims[i]) |> length for i in deltas]
 # ╠═72034ece-78ce-409f-8609-2dc94a1d5d74
 # ╠═e3d793d5-8872-400a-994b-f6c0b4ff7004
 # ╠═3233c69d-fcac-44ad-b2dd-6a6c0f8e4157
+# ╠═a5acf70b-ff48-473d-a028-e6599c0e7fd3
 # ╠═60acd41f-2208-4438-84b0-3792f98c28ff
 # ╠═72068b7d-648a-456e-8d78-2e94e475c475
 # ╠═600bf9be-7dfa-4f5c-b059-8bfb57dff209
@@ -284,3 +359,7 @@ survivals = [filter(x -> x > 0, sims[i]) |> length for i in deltas]
 # ╠═3816ce75-cd04-4f37-a090-e12e3cf9fd20
 # ╠═479b5375-b49d-4cb8-8e40-55a91c7e28bb
 # ╠═d50b1702-1b47-46d5-9b13-0316d600b934
+# ╠═9b51ee55-b447-4249-b7fd-e5b0e0b4b382
+# ╠═7f15aa35-a99c-4730-9e29-6812562b2972
+# ╠═9cfe4d78-b0b3-40c3-b866-2b0f3b4aef1f
+# ╟─21fd3d8f-32ef-42db-a8d9-71cc23796cf9
