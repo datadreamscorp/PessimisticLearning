@@ -119,12 +119,12 @@ md"""
 
 # ╔═╡ 3962efd9-a8d4-4a88-b424-40c4e132f3e2
 begin
-	plot(
+	histogram(
 		rand(Normal(0,1), 1000),
 		legend=false,
 		lw=2
 	)
-	plot!( rand(Normal(0.5,1.5), 1000), lw=2, size=(1000,600) )
+	histogram!( rand(Normal(0.5,1.5), 1000), lw=2, size=(1000,600), dpi=200 )
 	vline!( [-2.5] )
 end
 
@@ -206,7 +206,7 @@ begin
 		
 	end
 
-	plot(1:T2+1, v_opt, label="Optimal Kelly", xlab="time", ylab="payoff")
+	plot(1:T2+1, v_opt, label="Optimal Kelly", xlab="time", ylab="payoff", dpi=400)
 	plot!(1:T2+1, v_frac, label="Fractional Kelly")
 end
 
@@ -290,7 +290,7 @@ begin
 end
 
 # ╔═╡ 382395ba-9fd7-4d7b-943f-8fc101d48bd0
-plot(tplot, pplot, size=(1000, 600))
+plot(tplot, pplot, size=(1000, 600), dpi=200)
 
 # ╔═╡ ec192076-29de-4cc2-8ae6-9975ff18cd64
 html"<hr>"
@@ -328,7 +328,8 @@ begin
 	plot!(
 		0:0.001:1,
 		λ2.*(0:0.001:1).^(λ2 - 1),
-		lw=2
+		lw=2,
+		dpi=300
 	)
 	vline!([mean(U)], lw=2)
 end
@@ -416,7 +417,8 @@ begin
 		label="",
 		color="light blue",
 		bins=50,
-		size=(700,500)
+		size=(700,500),
+		dpi=300
 	)
 	vline!([mean(estimated_stakes)], labels="population mean", lw=2)
 	vline!([median(estimated_stakes)], labels="population median", lw=2)
@@ -426,7 +428,7 @@ begin
 end
 
 # ╔═╡ b935dfd4-2e4e-448d-b05d-687c7cc3c01a
-histogram(estimates, legend=false)
+histogram(estimates, legend=false, dpi=300)
 
 # ╔═╡ 75c13362-d361-4f3e-aa25-a6f9046a2e87
 begin
@@ -572,7 +574,8 @@ begin
 		surv_plot, 
 		payoff_plot, 
 		#layout=l, 
-		size=(900, 550)
+		size=(900, 550),
+		dpi=300
 	)
 
 end
@@ -650,6 +653,7 @@ begin
 		#ylab="aggregated payoff",
 		legend=false,
 		size=(800, 600),
+		dpi=200,
 		lw=2
 	)
 	vline!([optimal_delta], label="optimal degree of pessimism")
@@ -663,6 +667,7 @@ begin
 		],
 		label="",
 		xlab="degree of pessimistic weighting (δ)",
+		dpi=200,
 		lw=2
 	)
 	vline!([optimal_delta], label="optimal degree of pessimism")
@@ -685,7 +690,7 @@ begin
 	plot(surv_payoff_plot, surv_payoff_conformity, size=(800,500), link=:all)
 	"""
 
-	conf_payoff_plot = plot(payoff_biased, conformity_plot, size=(800, 600))
+	conf_payoff_plot = plot(payoff_biased, conformity_plot, size=(900, 600), dpi=300)
 end
 
 # ╔═╡ ffc8bf2f-f2d4-4d89-97d3-ed8b436d8602
