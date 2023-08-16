@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.19
+# v0.19.27
 
 using Markdown
 using InteractiveUtils
@@ -17,24 +17,20 @@ end
 # ╔═╡ aa91c8b2-f97d-11ed-285d-139b5d267c1d
 begin
 	using Pkg
-	Pkg.activate("./VarianceAverseSocialLearning/")
+	Pkg.activate("..")
 	using Revise
 end
 
 # ╔═╡ cd6cbe88-ca8a-42f5-aee5-55322d7ebd7c
 begin
-	import VarianceAverseSocialLearning as VA
+	#import VarianceAverseSocialLearning as VA
 	using Distributions, StatsBase
-	using StatsPlots, Plots
+	#using StatsPlots, Plots
+	using Plots
 	using PlutoUI, PlutoReport
-	theme(:dark)
+	using Base.Threads
+	include("../src/pessimistic_learning_ABM.jl")
 end
-
-# ╔═╡ f78d704a-a9dc-41b5-8c28-36397652f02e
-using Base.Threads
-
-# ╔═╡ e78a57d1-c488-49d9-a0d9-8d596a87c174
-@htl "$(apply_css_fixes()) $(presentation_ui(pcon))"
 
 # ╔═╡ 59aed410-2c3d-4d2d-9c94-a64811ee25ee
 @htl("""
@@ -82,10 +78,13 @@ pluto-output>div>img {
 </style>"
 
 # ╔═╡ 2f7d50cf-9246-4296-971f-369ada4bc47a
-theme(:default)
+theme(:dark)
 
 # ╔═╡ 71b3040d-d690-42b3-a764-bef5bd1857ae
 @bind pcon presentation_controls(aside=false)
+
+# ╔═╡ e78a57d1-c488-49d9-a0d9-8d596a87c174
+@htl "$(apply_css_fixes()) $(presentation_ui(pcon))"
 
 # ╔═╡ 9445caec-109b-446b-a480-b4d300c89f27
 Title("Pessimistic social transmission and environmental instability", "An exploration of the effect of estimability of risks on uncertainty preferences and social learning strategies", "Alejandro Pérez Velilla, Supervised by Paul Smaldino", "Dept of Cognitive and Information Sciences - University of California, Merced") # TODO Add image
@@ -121,11 +120,11 @@ md"""
 # ╔═╡ 3962efd9-a8d4-4a88-b424-40c4e132f3e2
 begin
 	plot(
-		Normal(0,1),
+		rand(Normal(0,1), 1000),
 		legend=false,
 		lw=2
 	)
-	plot!( Normal(0.5,1.5), lw=2, size=(1000,600) )
+	plot!( rand(Normal(0.5,1.5), 1000), lw=2, size=(1000,600) )
 	vline!( [-2.5] )
 end
 
@@ -143,7 +142,7 @@ md"
 "
 
 # ╔═╡ a6e2703a-c78f-41ba-aba8-a0a52185dd68
-LocalResource("./images/proportional_betting.png")
+LocalResource("../images/proportional_betting.png")
 
 # ╔═╡ 393875f0-fe27-4b2a-9f04-6e4063d3659b
 md"""
@@ -207,7 +206,7 @@ begin
 		
 	end
 
-	plot(1:T2+1, v_opt, label="Optimal Kelly", xlab="time", ylab="payoff", size=(800,600))
+	plot(1:T2+1, v_opt, label="Optimal Kelly", xlab="time", ylab="payoff")
 	plot!(1:T2+1, v_frac, label="Fractional Kelly")
 end
 
@@ -307,7 +306,7 @@ $u = \frac{1}{ρ}; \quad ρ \sim \text{Pareto}(λ)$
 """
 
 # ╔═╡ 5e552a85-5786-4cb1-aaec-fc9ff8c062ec
-LocalResource("./images/lambda.png", (:height => 440))
+LocalResource("../images/lambda.png", (:height => 440))
 
 # ╔═╡ 50c40b95-8a3b-4f96-9970-231166ddf72c
 @bind λ2 Slider(1:0.1:5)
@@ -337,32 +336,24 @@ end
 # ╔═╡ 65508f52-9207-4883-8f18-27d0710b00b7
 html"<hr>"
 
-# ╔═╡ b4fd09bb-a26b-4a5d-8505-f9497f4764a8
-λ2 / (λ2 + 1)
-
-# ╔═╡ 3746a219-f1bf-43d4-ba52-4320c2420284
-md"
-#### THE BAYESIAN INDIVIDUAL LEARNER WOULD FAIL
-" 
-
 # ╔═╡ e9735c5b-99a5-408f-aedd-bca2e72d5f36
 md"# 1. Estimating stakes
 "
 
 # ╔═╡ a037b129-ca5d-4aac-be7f-ea6b22c17f55
-LocalResource("./images/stake1.png", (:height => 440))
+LocalResource("../images/stake1.png", (:height => 440))
 
 # ╔═╡ cae6945a-a713-49cb-b55c-0841e872d2a0
-LocalResource("./images/stake2.png", (:height => 440))
+LocalResource("../images/stake2.png", (:height => 440))
 
 # ╔═╡ a4a6ae38-f6d5-4e0e-8e81-7a4f18468315
-LocalResource("./images/unknown_stake.png", (:height => 440))
+LocalResource("../images/unknown_stake.png", (:height => 440))
 
 # ╔═╡ fc231fa5-5d37-4c95-93de-d08356c27639
-LocalResource("./images/estimating_stake1.png", (:height => 440))
+LocalResource("../images/estimating_stake1.png", (:height => 440))
 
 # ╔═╡ 36661fea-6a69-4245-b8f4-b5fc5092ad75
-LocalResource("./images/social_estimating_stake1.png", (:height => 440))
+LocalResource("../images/social_estimating_stake1.png", (:height => 440))
 
 # ╔═╡ 211a41d6-cc88-4ec2-8611-ed7c0ba8c9ea
 html"<hr>"
@@ -396,7 +387,7 @@ We can use **probability-weighting** as employed in Rank-Dependent Expected Util
 """
 
 # ╔═╡ e0771bd9-deb3-4177-b6c2-108f1d07d98d
-LocalResource("./images/pessimistic_averaging.png", (:height => 640))
+LocalResource("../images/pessimistic_averaging.png", (:height => 640))
 
 # ╔═╡ 509259f8-77e2-4394-ab8a-0de40cd118af
 md""" # Let's visualize it. """
@@ -415,8 +406,8 @@ begin
 	u = 1.0
 	
 	#sim_rates = VA.simulate_success_rates(λ=λ, n=n, u=u)
-	estimates = VA.calculate_estimates02(n, tries, λ)
-	estimated_stakes = VA.calculate_stake.(estimates)
+	estimates = calculate_estimates02(n, tries, λ)
+	estimated_stakes = calculate_stake.(estimates)
 	
 	histogram(
 		estimated_stakes,
@@ -456,7 +447,7 @@ md"""
 # ╔═╡ 0db63f9d-03c5-4781-8083-bbfbbd1db5ed
 begin
 	deltas = 1:0.05:10
-	pweighted_stakes = [VA.rdeu_power(estimated_stakes, d) for d in deltas]
+	pweighted_stakes = [rdeu_power(estimated_stakes, d) for d in deltas]
 
 	expected_stake = ( 2*( λ*( 1 - ( 1/2^(λ+1) ) ) / ( (λ+1)*( 1 - (1/2^λ) ) ) ) - 1 ) * ( 1 - (1/2^λ) )
 
@@ -498,7 +489,7 @@ begin
 
 	
 	sims = [ 
-	[VA.simulate_gambles(u, λ, s, seasons=seasons, rounds=rounds) for i in 1:N] 
+	[simulate_gambles(u, λ, s, seasons=seasons, rounds=rounds) for i in 1:N] 
 	for s in pweighted_stakes 
 	]
 
@@ -517,14 +508,14 @@ begin
 	]
 	
 	max_delta_median = deltas[findmax(median_payoffs)[2]]
-	opt_stake_med = VA.rdeu_power(estimated_stakes, max_delta_median)
+	opt_stake_med = rdeu_power(estimated_stakes, max_delta_median)
 	max_delta_mean = deltas[findmax(average_payoffs)[2]]
-	opt_stake_mean = VA.rdeu_power(estimated_stakes, max_delta_mean)
+	opt_stake_mean = rdeu_power(estimated_stakes, max_delta_mean)
 	optimal_average_payoff = exp( (λ/(λ+1))*log(1+opt_stake_mean) + ( 1 - (λ/(λ+1)) )*log(1-opt_stake_mean) )
 
 	median_stake = median(estimated_stakes)
 	median_stake_payoff = [
-		VA.simulate_gambles(u, λ, median_stake, seasons=seasons, rounds=rounds)
+		simulate_gambles(u, λ, median_stake, seasons=seasons, rounds=rounds)
 		for i in 1:N
 	]
 
@@ -572,11 +563,17 @@ begin
 	vline!([optimal_delta], label="optimal degree of pessimism")
 	#hline!([ exp.( mean(median_stake_payoff ./ seasons) ) ], label="fitness of median stake")
 	
-	l = @layout [
-    a{0.5w} [grid(2,1)
-             ]
-	]
-	tri_plot = plot(payoff_hist, surv_plot, payoff_plot, layout=l, size=(900, 550))
+	#l = @layout [
+    #a{0.5w} [grid(2,1)]
+	#]
+	
+	tri_plot = plot(
+		payoff_hist, 
+		surv_plot, 
+		payoff_plot, 
+		#layout=l, 
+		size=(900, 550)
+	)
 
 end
 
@@ -697,9 +694,9 @@ end
 # ╔═╡ 486cc5d7-e45d-4db5-91b4-063d093b679d
 begin
 	max_pdelta_median = deltas[ findmax(median.(surv_payoffs))[2] ]
-	opt_pstake_med = VA.rdeu_power(estimated_stakes, max_pdelta_median)
+	opt_pstake_med = rdeu_power(estimated_stakes, max_pdelta_median)
 	max_pdelta_mean = deltas[ findmax(mean.(surv_payoffs))[2] ]
-	opt_pstake_mean = VA.rdeu_power(estimated_stakes, max_pdelta_mean)
+	opt_pstake_mean = rdeu_power(estimated_stakes, max_pdelta_mean)
 
 	md"""
 	Optimal perceived stake (mean): $opt_pstake_mean
@@ -708,20 +705,11 @@ begin
 	"""
 end
 
-# ╔═╡ 9c1b4b97-c9ad-48f7-8779-53b8da400da6
-deltas[findmax([
-			l / sum(payoff_and_conf)
-			for l in payoff_and_conf
-])[2]]
-
-# ╔═╡ b153be57-9c00-4426-91e4-c5d3ea827d7e
-optimal_delta
-
 # ╔═╡ bbef9e41-3e84-491c-a474-617066ace59f
 md""" # Having the right social learning strategy might be crucial to obtaining the right attitudes towards uncertainty. """
 
 # ╔═╡ 5c1c7097-4921-4311-af2a-acfdd46b5712
-LocalResource("./images/end.png", (:height => 640))
+LocalResource("../images/end.png", (:height => 640))
 
 # ╔═╡ 78eb7149-f922-47fd-9671-10308a1f3fe6
 md"""
@@ -754,7 +742,6 @@ md"
 # ╔═╡ Cell order:
 # ╟─aa91c8b2-f97d-11ed-285d-139b5d267c1d
 # ╟─cd6cbe88-ca8a-42f5-aee5-55322d7ebd7c
-# ╟─f78d704a-a9dc-41b5-8c28-36397652f02e
 # ╟─e78a57d1-c488-49d9-a0d9-8d596a87c174
 # ╟─59aed410-2c3d-4d2d-9c94-a64811ee25ee
 # ╟─68cfee78-f9fd-403e-a85b-7afc5d83dac3
@@ -789,8 +776,6 @@ md"
 # ╟─50c40b95-8a3b-4f96-9970-231166ddf72c
 # ╟─e2a1b025-2f1c-474b-8cfe-6acb040535fb
 # ╟─65508f52-9207-4883-8f18-27d0710b00b7
-# ╟─b4fd09bb-a26b-4a5d-8505-f9497f4764a8
-# ╟─3746a219-f1bf-43d4-ba52-4320c2420284
 # ╟─e9735c5b-99a5-408f-aedd-bca2e72d5f36
 # ╟─a037b129-ca5d-4aac-be7f-ea6b22c17f55
 # ╟─cae6945a-a713-49cb-b55c-0841e872d2a0
@@ -827,8 +812,6 @@ md"
 # ╟─ea1b9945-5964-4fcc-b561-027fcb9a3495
 # ╟─ffc8bf2f-f2d4-4d89-97d3-ed8b436d8602
 # ╟─486cc5d7-e45d-4db5-91b4-063d093b679d
-# ╟─9c1b4b97-c9ad-48f7-8779-53b8da400da6
-# ╟─b153be57-9c00-4426-91e4-c5d3ea827d7e
 # ╟─bbef9e41-3e84-491c-a474-617066ace59f
 # ╟─5c1c7097-4921-4311-af2a-acfdd46b5712
 # ╟─78eb7149-f922-47fd-9671-10308a1f3fe6

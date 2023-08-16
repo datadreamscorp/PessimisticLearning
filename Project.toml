@@ -1,2 +1,7 @@
+name = "PessimisticLearning"
+uuid = "27fc195e-2997-46dd-b0ef-9c66dbef8ce1"
+authors = ["aureliano <datadreamscorp@protonmail.com>"]
+version = "0.1.0"
+
 [deps]
-PlutoReport = "ab5eb977-4f23-42a0-954d-2743fb6218c4"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
