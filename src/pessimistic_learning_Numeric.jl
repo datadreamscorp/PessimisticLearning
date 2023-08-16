@@ -1,42 +1,11 @@
-module VarianceAverseSocialLearning
-
 using Distributions
 using Agents
 using Base.Threads
-
 
 function calculate_kelly(estimated_p)
     k = 2*estimated_p - 1
     k > 0 ? k : 0
 end
-
-
-@agent Kelly NoSpaceAgent begin
-    estimate::Float64
-    social_estimate::Float64
-    history::Vector{Int}
-end
-
-
-function initialize_kelly_learning(;
-    N=100
-)
-    
-    model = ABM(
-        Kelly,
-        nothing,
-        properties = Dict(
-            :N => N,
-        ),
-    )
-
-    for i in 1:model.N
-        add_agent!(model, 0.5, 0.5, [1])
-    end
-
-    return model
-end
-
 
 function simulate_success_rates(; u=0.7, λ=1000, n=100)
     [
@@ -47,17 +16,17 @@ end
 
 
 function rdeu_power(array::Vector, δ::Number; w=[])
-	
+
 	l = length(array)
-	
+
 	if length(w) == 0
 		w = repeat( [1/l], l )
 	end
-	
+
 	sorted = sort(array, rev=true)
-	
+
 	rdeu_mean = 0
-	
+
 	@threads for i in 1:l
 		if i == 1
 			ρ = w[1]^δ
@@ -68,22 +37,22 @@ function rdeu_power(array::Vector, δ::Number; w=[])
 	end
 
 	return rdeu_mean
-	
+
 end
 
 
 function rdeu_linear(array::Vector, δ::Number; w=[])
-	
+
 	l = length(array)
-	
+
 	if length(w) == 0
 		w = repeat( [1/l], l )
 	end
-	
+
 	sorted = sort(array, rev=true)
-	
+
 	rdeu_mean = 0
-	
+
 	for i in 1:l
 		if i == 1
 			ρ = w[1]^δ
@@ -94,7 +63,7 @@ function rdeu_linear(array::Vector, δ::Number; w=[])
 	end
 
 	return rdeu_mean
-	
+
 end
 
 
@@ -132,42 +101,39 @@ calculate_stake(est) = 2*est - 1 > 0 ? 2*est - 1 : 0
 function simulate_gambles(u, λ, stake;
 	log_capital=0,
 	log_benefit=0,
-	seasons=100, 
+	seasons=100,
 	rounds=10
 )
 	for i in 1:seasons
 		rate = u / rand( Pareto(λ) )
 		for j in 1:rounds
 			if rand() < rate
-				log_capital = log(1 + stake) + log_benefit + log_capital 
+				log_capital = log(1 + stake) + log_benefit + log_capital
 			else
 				log_capital = log(1 - stake) + log_capital
 			end
 		end
 	end
-	
+
 	return log_capital
-	
+
 end
 
 function simulate_gambles02(u, λ, stake;
 	log_capital=0,
 	log_benefit=0,
-	seasons=100, 
+	seasons=100,
 	rounds=10
 )
 	for i in 1:seasons
 		rate = u / rand( Pareto(λ) )
 		if rand() < rate
-			log_capital = log(1 + stake) + log_benefit + log_capital 
+			log_capital = log(1 + stake) + log_benefit + log_capital
 		else
 			log_capital = log(1 - stake) + log_capital
 		end
 	end
-	
+
 	return log_capital
-	
+
 end
-
-
-end # module VarianceAverseSocialLearning
