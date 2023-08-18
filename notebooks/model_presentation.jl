@@ -19,10 +19,6 @@ begin
 	using Pkg
 	Pkg.activate("..")
 	using Revise
-end
-
-# ╔═╡ cd6cbe88-ca8a-42f5-aee5-55322d7ebd7c
-begin
 	#import VarianceAverseSocialLearning as VA
 	using Distributions, StatsBase
 	#using StatsPlots, Plots
@@ -745,8 +741,7 @@ md"
 "
 
 # ╔═╡ Cell order:
-# ╟─aa91c8b2-f97d-11ed-285d-139b5d267c1d
-# ╟─cd6cbe88-ca8a-42f5-aee5-55322d7ebd7c
+# ╠═aa91c8b2-f97d-11ed-285d-139b5d267c1d
 # ╟─e78a57d1-c488-49d9-a0d9-8d596a87c174
 # ╟─59aed410-2c3d-4d2d-9c94-a64811ee25ee
 # ╟─68cfee78-f9fd-403e-a85b-7afc5d83dac3
