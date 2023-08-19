@@ -25,7 +25,7 @@ begin
 	using Plots
 	using PlutoUI, PlutoReport
 	using Base.Threads
-	include("../src/pessimistic_learning_ABM.jl")
+	include("../src/pessimistic_learning_Numeric.jl")
 end
 
 # ╔═╡ 59aed410-2c3d-4d2d-9c94-a64811ee25ee
@@ -116,11 +116,11 @@ md"""
 # ╔═╡ 3962efd9-a8d4-4a88-b424-40c4e132f3e2
 begin
 	histogram(
-		rand(Normal(0,1), 1000),
+		rand(Normal(0,1), 10000),
 		legend=false,
 		lw=2
 	)
-	histogram!( rand(Normal(0.5,1.5), 1000), lw=2, size=(1000,600), dpi=200 )
+	histogram!( rand(Normal(0.5,1.5), 10000), lw=2, size=(1000,600), dpi=200 )
 	vline!( [-2.5] )
 end
 
@@ -561,17 +561,17 @@ begin
 	vline!([optimal_delta], label="optimal degree of pessimism")
 	#hline!([ exp.( mean(median_stake_payoff ./ seasons) ) ], label="fitness of median stake")
 	
-	#l = @layout [
-    #a{0.5w} [grid(2,1)]
-	#]
+	l = @layout [
+    a{0.5w} [grid(2,1)]
+	]
 	
 	tri_plot = plot(
 		payoff_hist, 
 		surv_plot, 
 		payoff_plot, 
-		#layout=l, 
+		layout=l, 
 		size=(900, 550),
-		dpi=300
+		dpi=400
 	)
 
 end
@@ -741,7 +741,7 @@ md"
 "
 
 # ╔═╡ Cell order:
-# ╠═aa91c8b2-f97d-11ed-285d-139b5d267c1d
+# ╟─aa91c8b2-f97d-11ed-285d-139b5d267c1d
 # ╟─e78a57d1-c488-49d9-a0d9-8d596a87c174
 # ╟─59aed410-2c3d-4d2d-9c94-a64811ee25ee
 # ╟─68cfee78-f9fd-403e-a85b-7afc5d83dac3
@@ -752,7 +752,7 @@ md"
 # ╟─2c086922-d6ab-44b8-9f2c-8366fcc1cb58
 # ╟─5a364700-a419-4026-9b51-05ea4168e467
 # ╟─17528e3e-1053-4e58-a607-c7fb1bd66494
-# ╟─3962efd9-a8d4-4a88-b424-40c4e132f3e2
+# ╠═3962efd9-a8d4-4a88-b424-40c4e132f3e2
 # ╟─ae5e2863-36f1-4705-a7d6-161f05e91f1e
 # ╟─95a4d640-dd39-49c8-881e-8b2d258ba29e
 # ╟─d2ab8266-63d1-4587-baa9-c4295caf3456
