@@ -1,3 +1,5 @@
+using CSV, DataFrames
+
 function plot_powerdist(λ; n=1000, lw=3, legend=false)
 	U = [ 1/rand( Pareto(λ) ) for i in 1:n ]
 	
@@ -100,9 +102,9 @@ function simplots(λ, s, abarrier, n, aleph, legend, xlab, legend_alt)
         label="",
 		#legendtitle=L"λ",
 		#legendtitle=L"\hat{s}",
-        legendtitle="ŝ",
+        legendtitle=L"s^*",
         legendfontsize=7,
-		legendtitlefontsize=10,
+		legendtitlefontsize=12,
 		lw=2,
 		alpha=0.5,
 		ylab=L"ℵ = "*"$aleph",
@@ -203,7 +205,7 @@ function plot_resilience(l, e)
 	plot( 
 		geometric_plot, 
 		xlabel="reliance on conservative learning "*L"(α)", 
-		ylabel=L"\bar{V}_G \quad | \quad \kappa_G = "*"$e" 
+		ylabel=L"\bar{V}_G \quad | \quad \kappa = "*"$e" 
 	)
 end
 
@@ -737,7 +739,7 @@ function run_ABM_plot(;N = 10000, lamb = 2.0, aleph = 0.65, t = 2, envshift = 5,
 end
 
 
-function stab_plot_low(;n=25, eshift=10, mshift=6.0, seed=1, freq=0.5, pay=:Vbar_g1, ls=:solid, leg=true)
+function mixed_pop_plot(;n=25, eshift=10, mshift=6.0, seed=1, freq=0.5, pay=:Vbar_g1, ls=:solid, leg=true)
 	pal = cgrad(:matter, 4, categorical = true)[2:end]
 	dat = CSV.read("../data/analysis_4.csv", DataFrame)
 	data = dat[

@@ -123,9 +123,10 @@ function simulate_gambles(λ, א, s;
 
 end
 
+#=
 function sim_payoffs(
 	λ, S, א; 
-	abarrier=true, seasons=5000, rounds=1, n=1000
+	abarrier=true, seasons=1000, rounds=1, n=1000
 	)
 
 	payoffs = ( [
@@ -140,6 +141,7 @@ function sim_payoffs(
 
 	return(survmean, fullmean, prob_surv)
 end
+=#
 
 function sample_environment!(model)
 	for a ∈ allagents(model)
