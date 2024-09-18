@@ -1,4 +1,4 @@
-using Random, Distributions, StatsBase, Plots, LaTeXStrings
+using Random, Distributions, StatsBase, LaTeXStrings
 using Base.Threads
 
 g(x; l=5.0) = x == 1.0 ? 0.0 : exp( ( ( l / (l+1) )*log(1 + x) ) + ( (1 - ( l / (l+1) ) )*log(1 - x) ) )

@@ -31,8 +31,6 @@ md"""
 """
 
 # ╔═╡ 896ff8a7-0f61-4be3-adf4-d8e55ad16874
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	env_plot = plot( 
 		plot_powerdist.(
@@ -46,7 +44,6 @@ begin
 	
 	env_plot
 end
-  ╠═╡ =#
 
 # ╔═╡ ffd166fa-9d48-477a-8d16-f5e866551dfc
 md"""
@@ -54,8 +51,6 @@ md"""
 """
 
 # ╔═╡ b739131f-a173-4994-8143-d6c52ac07cb3
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	λ = 1.0:1.0:5.0
 	xaxis2 = 0.001:0.001:1.0
@@ -136,7 +131,6 @@ begin
 	
 	full_payplot
 end
-  ╠═╡ =#
 
 # ╔═╡ 5e5d671d-0b35-4404-b022-c2fe8bdde7c2
 md"""
@@ -144,8 +138,6 @@ md"""
 """
 
 # ╔═╡ aa8d557f-6436-407f-a0f7-afa823a35129
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	indv_plot = plot(
 		plot(
@@ -169,7 +161,6 @@ begin
 
 	indv_plot
 end
-  ╠═╡ =#
 
 # ╔═╡ f3fec0a1-40fc-4168-93a5-bb0648086d64
 md"""
@@ -177,8 +168,6 @@ md"""
 """
 
 # ╔═╡ d008b259-7a84-4f7e-99ed-e4b283775591
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	sens_plot = plot([ 
 		plot( plot_sensitivity.([5, 25], i, 1000, 25; seed=1)..., layout=(2,1) )
@@ -189,7 +178,6 @@ begin
 	savefig(sens_plot, "../images/fig4_sensitivity.pdf")
 	sens_plot
 end
-  ╠═╡ =#
 
 # ╔═╡ adeef0c1-d6dd-4d44-9d59-866cd6b47c21
 md"""
@@ -197,8 +185,6 @@ md"""
 """
 
 # ╔═╡ 71768709-5e37-43fc-91d9-cd47e659e1d8
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	dev_plot = plot(
 		plot( development_plot(2.0, xlabel="", t=true, legend=false), xaxis=false, xlim=(0,1)),
@@ -209,7 +195,6 @@ begin
 	savefig(dev_plot, "../images/fig5_development.pdf")
 	dev_plot
 end
-  ╠═╡ =#
 
 # ╔═╡ d8af2358-06f5-4190-b60c-eea14d12e5e3
 md"""
@@ -217,8 +202,6 @@ md"""
 """
 
 # ╔═╡ ee1b6bf1-3074-4b5d-8895-aaf034ba3f31
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	aleph_plotter = plot(
 		aleph_plot(1.5, legend=true, ylab=L"\bar{V}"),
@@ -236,7 +219,6 @@ begin
 
 	aleph_plotter
 end
-  ╠═╡ =#
 
 # ╔═╡ 1d29ca8c-12f6-4803-a6cb-7d5f27576a02
 md"""
@@ -244,8 +226,6 @@ md"""
 """
 
 # ╔═╡ aebf5e0d-7520-4f6e-9dff-493c4e7a5bb0
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	attitude_plot = plot(
 		plot( plot_conservative_attitudes(1.5), ylabel="median stake "*L"(s)", xlabel="" ),
@@ -275,7 +255,6 @@ begin
 
 	full_conservative_plot
 end
-  ╠═╡ =#
 
 # ╔═╡ 738983ff-eaff-4628-97f3-25455458f047
 md"""
@@ -283,8 +262,6 @@ md"""
 """
 
 # ╔═╡ 7300889d-373f-424d-9cdc-f28856cb0f23
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	abmplot = plot(
 		run_ABM_plot(N=10000, aleph=0.65, t=25, legend=:topleft),
@@ -299,7 +276,6 @@ begin
 	
 	abmplot
 end
-  ╠═╡ =#
 
 # ╔═╡ f37c0c19-e434-4d80-8b3a-31732df114dd
 md"""
@@ -307,8 +283,6 @@ md"""
 """
 
 # ╔═╡ 6ea0d83d-b3df-443a-9dd0-baf314ded951
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	inequality_plot = plot(
 		plot(
@@ -345,7 +319,6 @@ begin
 
 	inequality_plot
 end
-  ╠═╡ =#
 
 # ╔═╡ 25ae55f1-d1d8-4974-ac88-e5c4e6bfd699
 md"""
@@ -353,8 +326,6 @@ md"""
 """
 
 # ╔═╡ 26ea2476-a0da-4f33-8e4b-6d3619db30b6
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	_, mdat = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.95), 20, mdata=[:Vbar_g0, :Vbar_g1] )
 	_, mdat2 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.75), 20, mdata=[:Vbar_g0, :Vbar_g1] )
@@ -548,7 +519,6 @@ begin
 
 	total_poverty
 end
-  ╠═╡ =#
 
 # ╔═╡ ceacb32a-71ca-49c6-ab92-f5f33fc32b31
 md"""
@@ -561,7 +531,6 @@ md"""
 """
 
 # ╔═╡ 3a2082c4-ef09-4b53-af1b-411792729560
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	probruin_plot = plot(
@@ -611,7 +580,6 @@ md"""
 """
 
 # ╔═╡ ea485e6d-2cfa-48b7-b02d-d86578ca0d37
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	expected_plot = plot(
@@ -706,7 +674,6 @@ md"""
 """
 
 # ╔═╡ b34de91d-299c-4bce-a4d0-6f9c65487583
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	indv_plot2 = plot(
@@ -739,7 +706,6 @@ md"""
 """
 
 # ╔═╡ 189cca21-b09b-4b56-ab6c-82f3120cd31f
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	abmplot_sup = plot(
@@ -763,7 +729,6 @@ md"""
 """
 
 # ╔═╡ 01a70f2d-7c1d-404f-8501-82b7d4a44d10
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	resilience_plot = plot(
@@ -798,7 +763,6 @@ md"""
 """
 
 # ╔═╡ 373db5ba-e2d9-4a7e-abed-fdab8a048e27
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	aleph_geo_plotter = plot(
@@ -849,7 +813,6 @@ md"""
 """
 
 # ╔═╡ 59cd6ed6-53cc-45f1-9a16-b62a72a00243
-# ╠═╡ disabled = true
 #=╠═╡
 begin
 	varplot = plot(

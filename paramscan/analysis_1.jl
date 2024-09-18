@@ -2,11 +2,7 @@
 #ANALYSIS 1
 @everywhere using Pkg
 @everywhere Pkg.activate("..")
-
-@everywhere include("../src/pessimistic_learning_ABM.jl")
-
-@everywhere using CSV, Distributed
-@everywhere using Agents, Random, Distributions, Statistics, StatsBase
+@everywhere using PessimisticLearning, Agents, CSV
 
 @everywhere total_ticks = 0
 
