@@ -3,7 +3,8 @@ using StatsBase, Random, Distributions, Agents
 @agent struct Peep(NoSpaceAgent)
     ###
     #Heritable characteristics
-    s::Float64 #risk attidude
+	s_young::Float64 #juvenile risk attitude
+    s::Float64 #adult risk attidude
     soc_h::Float64 #weight of horizontal social information
     soc_v::Float64 #weight of vertical and oblique social information
     L::Int64 #learning strategy for vertical and oblique social information
@@ -123,26 +124,6 @@ function simulate_gambles(λ, א, s;
 
 end
 
-#=
-function sim_payoffs(
-	λ, S, א; 
-	abarrier=true, seasons=1000, rounds=1, n=1000
-	)
-
-	payoffs = ( [
-			exp.( [simulate_gambles(λ, א, s, abarrier=abarrier, seasons=seasons, rounds=rounds) for i ∈ 1:n] ./ seasons )
-			for s ∈ S
-		] )
-	
-	surv = [filter(v -> v >= 1.0, p) for p in payoffs]
-	fullmean = mean.(payoffs)
-	survmean = mean.(surv)
-	prob_surv = length.(surv) ./ n
-
-	return(survmean, fullmean, prob_surv)
-end
-=#
-
 function sample_environment!(model)
 	for a ∈ allagents(model)
         est = 0
@@ -154,7 +135,7 @@ function sample_environment!(model)
 			end
         end
         est = est / model.t
-        a.s = 2*est - 1 > 0 ? 2*est - 1 : 0.0
+        a.s_young = 2*est - 1 > 0 ? 2*est - 1 : 0.0
     end
 end
 
@@ -165,8 +146,8 @@ function pool!(model)
 			models = filter(x -> x.group == a.group, models)
 		end
 		if length(models) > 0
-			model_stakes = [b.s for b ∈ models]
-        	a.s = (1 - a.soc_h)*a.s + (a.soc_h)*mean(model_stakes)
+			model_stakes = [b.s_young for b ∈ models]
+        	a.s = (1 - a.soc_h)*a.s_young + (a.soc_h)*mean(model_stakes)
 		end
     end
 end
@@ -400,6 +381,7 @@ function initialize_pessimistic_learning(;
 
 		agent = Peep( 
 			a,
+			0.0,
             0.0,
 			model.init_soc_h, 
 			init_soc_v,
@@ -542,3 +524,23 @@ function model_step!(model)
 	pass_the_torch!(model)
 	
 end
+
+#=
+function sim_payoffs(
+	λ, S, א; 
+	abarrier=true, seasons=1000, rounds=1, n=1000
+	)
+
+	payoffs = ( [
+			exp.( [simulate_gambles(λ, א, s, abarrier=abarrier, seasons=seasons, rounds=rounds) for i ∈ 1:n] ./ seasons )
+			for s ∈ S
+		] )
+	
+	surv = [filter(v -> v >= 1.0, p) for p in payoffs]
+	fullmean = mean.(payoffs)
+	survmean = mean.(surv)
+	prob_surv = length.(surv) ./ n
+
+	return(survmean, fullmean, prob_surv)
+end
+=#

@@ -580,14 +580,14 @@ begin
 	plot!(
 		1.5:0.05:5,
 		[probruin(l, 0.8, 0.5) for l in 1.5:0.05:5],
-		lw=2, c="black", label="0.80", legendtitle=L"\aleph", ls=:dash
+		lw=2, c="black", label="0.8", legendtitle=L"\aleph", ls=:dash
 	)
 	plot!(
 		1.5:0.05:5,
 		[probruin_numeric(l, 0.8, 0.5) for l in 1.5:0.05:5],
 		lw=2, c="black", alpha=0.5, ls=:dash, label=""
 	)
-
+	
 	plot!(
 		1.5:0.05:5,
 		[probruin(l, 0.95, 0.5) for l in 1.5:0.05:5],
@@ -598,6 +598,18 @@ begin
 		[probruin_numeric(l, 0.95, 0.5) for l in 1.5:0.05:5],
 		lw=2, c="black", alpha=0.5, ls=:dashdotdot, label=""
 	)
+	#=
+	plot!(
+		1.5:0.05:5,
+		[probruin(l, 0.95, 0.5) for l in 1.5:0.05:5],
+		lw=2, c="black", label="0.95", legendtitle=L"\aleph", ls=:dot
+	)
+	plot!(
+		1.5:0.05:5,
+		[probruin_numeric(l, 0.95, 0.5) for l in 1.5:0.05:5],
+		lw=2, c="black", alpha=0.5, ls=:dot, label=""
+	)
+	=#
 
 	savefig(probruin_plot, "../images/sup1_probruin.pdf")
 
@@ -869,7 +881,7 @@ end
   ╠═╡ =#
 
 # ╔═╡ Cell order:
-# ╟─cfb0a045-a40d-4019-987f-e4dc1c92074e
+# ╠═cfb0a045-a40d-4019-987f-e4dc1c92074e
 # ╟─1f7f1128-8eea-4695-b8cd-044d7c91890b
 # ╟─e8b7171b-9810-402c-818c-61c12fb3fec7
 # ╠═896ff8a7-0f61-4be3-adf4-d8e55ad16874

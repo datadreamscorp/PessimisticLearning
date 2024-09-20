@@ -1,4 +1,4 @@
-using CSV, DataFrames
+using Plots, CSV, DataFrames
 
 function plot_powerdist(λ; n=1000, lw=3, legend=false)
 	U = [ 1/rand( Pareto(λ) ) for i in 1:n ]
