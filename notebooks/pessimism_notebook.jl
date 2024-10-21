@@ -287,8 +287,8 @@ md"""
 #=╠═╡
 begin
 	abmplot = plot(
-		run_ABM_plot(N=10000, aleph=0.65, t=25, legend=:topleft),
-		run_ABM_plot(N=10000, aleph=0.95, t=25, plot_lab="(B)", legend=false),
+		run_ABM_plot(N=10000, aleph=0.65, t=25, legend=:topleft, seed=65446),
+		run_ABM_plot(N=10000, aleph=0.95, t=25, plot_lab="(B)", legend=false, seed=575664),
 		layout=(1,2), size=(800,400), 
 		margins=3Plots.mm, xtickfontsize=5, xrotation=90
 	)
@@ -356,10 +356,10 @@ md"""
 # ╠═╡ disabled = true
 #=╠═╡
 begin
-	_, mdat = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.95), 20, mdata=[:Vbar_g0, :Vbar_g1] )
-	_, mdat2 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.75), 20, mdata=[:Vbar_g0, :Vbar_g1] )
-	_, mdat3 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.5), 20, mdata=[:Vbar_g0, :Vbar_g1] )
-	_, mdat4 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.0), 20, mdata=[:Vbar_g0, :Vbar_g1] )
+	_, mdat = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.95, seed=54746), 20, mdata=[:Vbar_g0, :Vbar_g1] )
+	_, mdat2 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.75, seed=474), 20, mdata=[:Vbar_g0, :Vbar_g1] )
+	_, mdat3 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.5, seed=0179), 20, mdata=[:Vbar_g0, :Vbar_g1] )
+	_, mdat4 = run!( initialize_pessimistic_learning(mixed=true, parochial=false, mixed_L1=1, mixed_L2=1, envshift=10, init_soc_v=0.0, seed=1106734), 20, mdata=[:Vbar_g0, :Vbar_g1] )
 
 	poverty_trap_plot = plot(
 		0:20, mdat.Vbar_g0, 
@@ -566,36 +566,36 @@ md"""
 begin
 	probruin_plot = plot(
 		1.5:0.05:5,
-		[probruin(l, 0.65, 0.5) for l in 1.5:0.05:5],
+		[probruin(l, 0.65, 0.5, Vb=1) for l in 1.5:0.05:5],
 		lw=2, c="black", label="0.65", legendtitle=L"\aleph",
 		xlabel="environmental uncertainty "*L"(\lambda)",
 		ylabel=L"p_{\textrm{ruin}}"
 	)
 	plot!(
 		1.5:0.05:5,
-		[probruin_numeric(l, 0.65, 0.5) for l in 1.5:0.05:5],
+		[probruin_numeric(l, 0.65, 0.5, Vb=1) for l in 1.5:0.05:5],
 		lw=2, c="black", alpha=0.5, label=""
 	)
 
 	plot!(
 		1.5:0.05:5,
-		[probruin(l, 0.8, 0.5) for l in 1.5:0.05:5],
+		[probruin(l, 0.8, 0.5, Vb=1) for l in 1.5:0.05:5],
 		lw=2, c="black", label="0.8", legendtitle=L"\aleph", ls=:dash
 	)
 	plot!(
 		1.5:0.05:5,
-		[probruin_numeric(l, 0.8, 0.5) for l in 1.5:0.05:5],
+		[probruin_numeric(l, 0.8, 0.5, Vb=1) for l in 1.5:0.05:5],
 		lw=2, c="black", alpha=0.5, ls=:dash, label=""
 	)
 	
 	plot!(
 		1.5:0.05:5,
-		[probruin(l, 0.95, 0.5) for l in 1.5:0.05:5],
+		[probruin(l, 0.95, 0.5, Vb=1) for l in 1.5:0.05:5],
 		lw=2, c="black", label="0.95", legendtitle=L"\aleph", ls=:dashdotdot
 	)
 	plot!(
 		1.5:0.05:5,
-		[probruin_numeric(l, 0.95, 0.5) for l in 1.5:0.05:5],
+		[probruin_numeric(l, 0.95, 0.5, Vb=1) for l in 1.5:0.05:5],
 		lw=2, c="black", alpha=0.5, ls=:dashdotdot, label=""
 	)
 	#=

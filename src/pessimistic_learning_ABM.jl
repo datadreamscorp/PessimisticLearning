@@ -104,7 +104,7 @@ function simulate_gambles(λ, א, s;
 				log_capital = log(1 - s) + log_capital
 			end
 			if abarrier
-				if log_capital < 0.0
+				if log_capital < log(Vb)
 					log_capital = -Inf
 					break
 				end
@@ -112,7 +112,7 @@ function simulate_gambles(λ, א, s;
 		end
 
 		if abarrier
-			if log_capital < 0.0
+			if log_capital < log(Vb)
 				log_capital = -Inf
 				break
 			end
