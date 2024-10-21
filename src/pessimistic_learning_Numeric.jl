@@ -39,15 +39,17 @@ stakemean(n, tries, λ) = calculate_stake( mean( calculate_estimates(n, tries, �
 
 meanstake(n, tries, λ) = mean( calculate_stake.( calculate_estimates(n, tries, λ) ) )
 
-function probruin(λ, א, s)
+function probruin(λ, א, s; Vb = 1)
 	u = λ/(λ+1)
 	μ = u*log(1+s) + (1-u)*log(1-s)
 	σ²= ( u*(log(1+s) - μ)^2 ) + ( (1-u)*(log(1-s) - μ)^2 )
 
-	return clamp( (1 - א)^(2*μ/(σ² + μ^2)), 0, 1 ) 
+	V0 = Vb/(1 - א)
+
+	return clamp( (Vb/V0)^(2*μ/(σ² + μ^2)), 0, 1 ) 
 end
 
-probruin_numeric(λ, א, s; seasons=10000, n=10000) = 1 - ( (filter(x -> x != -Inf, [simulate_gambles(λ, א, s, seasons=seasons) for i in 1:n]) |> length)/n )
+probruin_numeric(λ, א, s; Vb=1, seasons=10000, n=10000) = 1 - ( (filter(x -> x != -Inf, [simulate_gambles(λ, א, s, Vb=Vb, seasons=seasons) for i in 1:n]) |> length)/n )
 
 function simulate_gambles_num(λ, aleph, stake;
 	u=1,
