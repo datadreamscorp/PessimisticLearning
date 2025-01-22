@@ -1,27 +1,56 @@
 #############
-#ANALYSIS 0
-@everywhere using Pkg
-@everywhere Pkg.activate("..")
-@everywhere using PessimisticLearning, Agents, CSV
+#ANALYSIS 0 - EVOLUTION OF PEER INFLUENCE AND SENSITIVITY
+using Pkg
+Pkg.activate("..")
 
-@everywhere total_ticks = 0
+using Distributed
+addprocs(90)
 
-@everywhere begin #INCLUDE MODEL CODE AND NECESSARY LIBRARIES
+@everywhere begin 
+    
+    using PessimisticLearning, Agents, CSV, Random
+    
+    total_gens = 2500
+
+    seeds = rand(Xoshiro(465826433645), 1:100000, 25)
 
 	parameters = Dict( #ALTER THIS DICTIONARY TO DEFINE PARAMETER DISTRIBUTIONS
-    :N => 10000,
-    :n => [5, 10, 25],
-    :T => [1000],
-    :t => [2, 25],
-    :λ => [1.5, 3.0, 6.0],
-    :aleph => [0.65, 0.8, 0.95],
-    :init_sens => [0.0, 0.1],
-    :init_soc_h => 0.0:0.05:1.0|>collect,
-    :seed => 1:5|>collect
+    :N => 1000,
+    :n => [1, 5, 10, 15],
+    :T => [100],
+    :t => [2, 5, 10, 15],
+    :u => [0.55, 0.6, 0.65, 0.75],
+    :aleph => 0.05:0.05:0.95|>collect,
+    :mu_std => 0.01,
+    :mu_soc_h => 0.001,
+    :mu_soc_v => 0.0,
+    :mu_sens => 0.001,
+    :mu_L => 0.0,
+    :selection => true,
+    :mixed => false,
+    :seed => seeds
 )
 
 	mdata = [
-        :Vbar
+        :Vbar,
+        :soc_h_median,
+        :soc_h_lerror,
+        :soc_h_herror,
+        :sens_median,
+        :sens_lerror,
+        :sens_herror,
+        :s_median,
+        :s_mean,
+        :s_lerror, 
+        :s_herror,
+        :s_ltail,
+        :s_htail,
+        :s_young_median,
+        :s_young_lerror, 
+        :s_young_herror,
+        :concentration,
+        :concentration_lerror,
+        :concentration_herror
         ]
 
 end
@@ -29,11 +58,12 @@ end
 #USE THIS LINE AFTER DEFINITIONS TO BEGIN PARAMETER SCANNING
 _, mdf = paramscan(
             parameters, initialize_pessimistic_learning;
-            mdata=mdata,
-            n = total_ticks,
-			parallel=true,
-			when_model = 0:total_ticks|>collect,
+            mdata = mdata,
+            n = total_gens,
+			parallel = true,
+			when_model = [total_gens],
 			showprogress = true
 	)
 
+    
 CSV.write("../data/analysis_0.csv", mdf)
