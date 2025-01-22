@@ -1,20 +1,359 @@
 using StatsBase, Random, Distributions, Agents
 
+function kelly_stake(u)
+	u > 0.5 ? 2*u - 1 : 0.0
+end
+
+function median_error(X; f="median", l=0.25, h=0.75)
+	med = f == "median" ? median(X) : mean(X)
+	ϵ⁻ = quantile(X, l)
+	ϵ⁺ = quantile(X, h)
+	return (med, ϵ⁻, ϵ⁺)
+end
+
+function trauma(x, delta)
+    if delta == 0
+        return x == 0 ? 1.0 : 0.0  # Dirac delta at x = 0
+    elseif delta == 0.5
+        return 1.0 - x  # Linear decay
+    elseif delta == 1
+        return x == 1 ? 0.0 : 1.0  # Inverted Dirac delta at x = 1
+    elseif delta > 0 && delta < 0.5
+        p = 1.0 / (2.0 * delta)
+        return (1.0 - x) ^ p
+    elseif delta > 0.5 && delta < 1
+        q = 1.0 / (2.0 * (1.0 - delta))
+        return 1.0 - x ^ q
+    else
+        error("delta must be in [0, 1]")
+    end
+end
+
+function aleph_transform(aleph; Vb=1)
+	return Vb/(1 - aleph)
+end
+
+function sample_environment!(model)
+	for a ∈ allagents(model)
+        a.α_young = 1.0
+		a.β_young = 1.0
+        for t ∈ 1:model.t
+			if model.mixed
+                if rand( abmrng(model) ) < model.mixed_λ[a.group]
+					a.α_young += 1
+				else
+					a.β_young += 1
+				end
+			else
+                if rand( abmrng(model) ) < model.λ
+                #if rand( abmrng(model) ) < 1 / rand(abmrng(model), Pareto(model.λ/(1 - model.λ)))
+					a.α_young += 1
+				else
+            		a.β_young += 1
+				end
+			end
+        end
+    end
+end
+
+function pool!(model)
+    for a ∈ shuffle(abmrng(model), allagents(model)|>collect)
+
+        a.models = sample(abmrng(model), deleteat!((1:model.N)|>collect, a.id), model.n, replace = false)
+        models = filter(x -> x.id ∈ a.models, allagents(model)|>collect)
+        
+		if model.mixed && a.parochial
+			models = filter(x -> x.group == a.group, models)
+		end
+
+		if length(models) > 0
+
+			model_alphas = [b.α_young for b ∈ models]
+			model_betas = [b.β_young for b ∈ models]
+
+            if sum(model_alphas) > 1 && sum(model_betas) > 1
+
+                a.α_young += (a.soc_h)*sum( model_alphas )
+                a.β_young += (a.soc_h)*sum( model_betas )
+
+            end
+            
+		end
+
+        a.α = a.α_young
+		a.β = a.β_young
+
+		mean_beta = a.α / (a.α + a.β)
+        a.s_child = kelly_stake(mean_beta)
+        a.s = a.s_child
+
+    end
+end
+
+function learn_from_olds!(model)
+
+	for a ∈ shuffle(abmrng(model), allagents(model)|>collect)
+
+		a.old_models = sample(abmrng(model), 1:model.N, model.m, replace = false)
+		old_models = filter(x -> x.id ∈ a.old_models, allagents(model)|>collect)
+
+		if model.demographic_filter
+			old_models = filter(x -> x.log_payoff > 0.0, old_models)
+		end
+		
+		if model.mixed && a.parochial
+			old_models = filter(x -> x.group == a.group, old_models)
+		end
+
+        if length(old_models) > 0
+
+			old_alphas = [b.α_old for b ∈ old_models]
+			old_betas = [b.β_old for b ∈ old_models]
+            old_payoffs = [b.log_payoff for b ∈ old_models]
+
+            if a.L == 1
+				learned_α = mean(old_alphas)
+				learned_β = mean(old_betas)
+            elseif a.L == 2
+                learned_α = rand(abmrng(model), old_alphas)
+				learned_β = rand(abmrng(model), old_betas)
+            elseif a.L == 3
+				highest_payoff = findmax(old_payoffs)[2]
+                learned_α = old_alphas[ highest_payoff ]
+				learned_β = old_betas[ highest_payoff ]
+            end
+            
+            a.α_young = (1 - a.soc_v)*a.α_young + a.soc_v*learned_α
+			a.β_young = (1 - a.soc_v)*a.β_young + a.soc_v*learned_β
+
+        end
+
+        a.α = a.α_young
+		a.β = a.β_young
+
+		mean_beta = a.α_young / (a.α_young + a.β_young)
+		a.s_young = kelly_stake(mean_beta)
+        a.s = a.s_young
+
+	end
+end
+
+function pull_stake!(model, agent, other)
+    normalized_difference = abs(other.s - agent.s) / maximum( [agent.s, 1 - agent.s] )
+	agent.β += trauma( normalized_difference, agent.sens )*agent.β
+	mean_beta = agent.α / (agent.α + agent.β)
+	agent.s = kelly_stake(mean_beta)
+end
+
+function play!(model)
+
+	for a ∈ allagents(model)
+		a.log_payoff = model.mixed ? log(aleph_transform(model.mixed_aleph[a.group])) : log(aleph_transform(model.aleph))
+        a.s_vec = []
+    end
+	
+	for i ∈ 1:model.T
+
+		for a ∈ allagents(model)
+			
+			u = rand( abmrng(model), Beta(a.α, a.β) )
+			s = kelly_stake(u)
+
+			if model.mixed
+                if rand( abmrng(model) ) < model.mixed_λ[a.group]
+					a.log_payoff += log(1 + s)
+					a.α += 1
+				else
+					a.log_payoff += log(1 - s)
+					a.β += 1
+				end
+			else
+                if rand( abmrng(model) ) < model.λ
+                #if rand( abmrng(model) ) < 1 / rand(abmrng(model), Pareto(model.λ/(1 - model.λ)))
+					a.log_payoff += log(1 + s)
+					a.α += 1
+				else
+					a.log_payoff += log(1 - s)
+					a.β += 1
+				end
+			end
+
+			mean_beta = a.α / (a.α + a.β)
+			a.s = kelly_stake(mean_beta)
+
+            if a.log_payoff != -Inf
+
+                if a.log_payoff < 0.0
+                    a.log_payoff = -Inf
+                    for b ∈ filter(
+                        x -> a.id ∈ x.models, 
+                        allagents(model)|>collect
+                        )
+                        if b.log_payoff > 0.0
+                            pull_stake!(model, b, a)
+                        end
+                    end
+                end
+
+            end
+
+            push!(a.s_vec, a.s)
+            a.s_mean = mean(a.s_vec)
+            #a.s_median = median(a.s_vec)
+
+		end
+
+	end
+
+	for a ∈ allagents(model)|>collect
+		a.log_payoff -= model.mixed ? log(aleph_transform(model.mixed_aleph[a.group])) : log(aleph_transform(model.aleph))
+        a.avg_payoff = exp( a.log_payoff / model.T )
+	end
+
+end
+
+function pass_the_torch!(model)
+	for a in allagents(model)|>collect
+		a.α_old = a.α
+		a.β_old = a.β
+		a.s_old = a.s
+	    a.soc_h_old = a.soc_h
+	    a.soc_v_old = a.soc_v
+	    a.L_old = a.L
+	    a.sens_old = a.sens
+	end
+end
+
+function selection!(model)
+
+	peeps = allagents(model)|>collect
+
+	if !model.mixed
+
+		fitness = [clamp(exp(a.log_payoff / (model.T)), eps(), Inf)^model.b_coeff for a ∈ peeps]
+		total_fitness = sum(fitness)
+		fitness_weights = weights(fitness ./ total_fitness)
+
+		soc_h_vec = [a.soc_h_old for a ∈ peeps]
+		soc_v_vec = [a.soc_v_old for a ∈ peeps]
+		sens_vec = [a.sens_old for a ∈ peeps]
+		L_vec = [a.L_old for a ∈ peeps]
+
+		for peep ∈ peeps
+
+			new_soc_h = rand(abmrng(model)) > model.mu_soc_h ? sample(abmrng(model), soc_h_vec, fitness_weights) : rand(abmrng(model))
+			peep.soc_h = model.mu_soc_h > 0.0 ? new_soc_h : peep.soc_h
+            peep.soc_h = model.mu_soc_h > 0.0 ? clamp( rand(abmrng(model), Normal(peep.soc_h, model.mu_std)) , 0, 1 ) : peep.soc_h
+
+			new_soc_v = rand(abmrng(model)) > model.mu_soc_v ? sample(abmrng(model), soc_v_vec, fitness_weights) : rand(abmrng(model))
+			peep.soc_v = model.mu_soc_v > 0.0 ? new_soc_v : peep.soc_v
+            peep.soc_v = model.mu_soc_v > 0.0 ? clamp( rand(abmrng(model), Normal(peep.soc_v, model.mu_std)), 0, 1 ) : peep.soc_v
+
+			new_sens = rand(abmrng(model)) > model.mu_sens ? sample(abmrng(model), sens_vec, fitness_weights) : rand(abmrng(model))
+			peep.sens = model.mu_sens > 0.0 ? new_sens : peep.sens
+            peep.sens = model.mu_sens > 0.0 ? clamp( rand(abmrng(model), Normal(peep.sens, model.mu_std)), 0, 1 ) : peep.sens
+
+			new_L = rand(abmrng(model)) > model.mu_L ? sample(abmrng(model), L_vec, fitness_weights) : rand(abmrng(model), model.strat_pool)
+			peep.L = model.mu_L > 0.0 ? new_L : peep.L
+
+		end
+
+	else
+		
+		g0 = filter(x -> x.group == 1, peeps)
+		g1 = filter(x -> x.group == 2, peeps)
+
+		fitness_g0 = [clamp(exp(a.log_payoff / (model.T)), eps(), Inf)^model.b_coeff for a ∈ g0]
+		fitness_g1 = [clamp(exp(a.log_payoff / (model.T)), eps(), Inf)^model.b_coeff for a ∈ g1]
+
+		fitness_weights_g0 = weights(fitness_g0 ./ sum(fitness_g0))
+		fitness_weights_g1 = weights(fitness_g1 ./ sum(fitness_g1))
+
+		soc_h_vec_g0 = [a.soc_h_old for a ∈ g0]
+		soc_v_vec_g0 = [a.soc_v_old for a ∈ g0]
+		sens_vec_g0 = [a.sens_old for a ∈ g0]
+		L_vec_g0 = [a.L_old for a ∈ g0]
+        parochial_vec_g0 = [a.parochial for a ∈ g0]
+
+		soc_h_vec_g1 = [a.soc_h_old for a ∈ g1]
+		soc_v_vec_g1 = [a.soc_v_old for a ∈ g1]
+		sens_vec_g1 = [a.sens_old for a ∈ g1]
+		L_vec_g1 = [a.L_old for a ∈ g1]
+        parochial_vec_g1 = [a.parochial for a ∈ g1]
+
+		for peep ∈ g0
+
+			new_soc_h = rand(abmrng(model)) > model.mu_soc_h ? sample(abmrng(model), soc_h_vec_g0, fitness_weights_g0) : rand(abmrng(model))
+			peep.soc_h = model.mu_soc_h > 0.0 ? new_soc_h : peep.soc_h
+            peep.soc_h = model.mu_soc_h > 0.0 ? clamp( rand(abmrng(model), Normal(peep.soc_h, model.mu_std)) , 0, 1 ) : peep.soc_h
+
+			new_soc_v = rand(abmrng(model)) > model.mu_soc_v ? sample(abmrng(model), soc_v_vec_g0, fitness_weights_g0) : rand(abmrng(model))
+			peep.soc_v = model.mu_soc_v > 0.0 ? new_soc_v : peep.soc_v
+            peep.soc_v = model.mu_soc_v > 0.0 ? clamp( rand(abmrng(model), Normal(peep.soc_v, model.mu_std)), 0, 1 ) : peep.soc_v
+
+			new_sens = rand(abmrng(model)) > model.mu_sens ? sample(abmrng(model), sens_vec_g0, fitness_weights_g0) : rand(abmrng(model))
+			peep.sens = model.mu_sens > 0.0 ? new_sens : peep.sens
+            peep.sens = model.mu_sens > 0.0 ? clamp( rand(abmrng(model), Normal(peep.sens, model.mu_std)), 0, 1 ) : peep.sens
+
+			new_L = rand(abmrng(model)) > model.mu_L ? sample(abmrng(model), L_vec_g0, fitness_weights_g0) : rand(abmrng(model), model.strat_pool)
+			peep.L = model.mu_L > 0.0 ? new_L : peep.L
+
+            new_par = rand(abmrng(model)) > model.mu_parochial ? sample(abmrng(model), parochial_vec_g0, fitness_weights_g0) : rand(abmrng(model), [true, false])
+			peep.parochial = model.mu_parochial > 0.0 ? new_par : peep.parochial
+
+		end
+
+		for peep ∈ g1
+
+			new_soc_h = rand(abmrng(model)) > model.mu_soc_h ? sample(abmrng(model), soc_h_vec_g1, fitness_weights_g1) : rand(abmrng(model))
+			peep.soc_h = model.mu_soc_h > 0.0 ? new_soc_h : peep.soc_h
+            peep.soc_h = model.mu_soc_h > 0.0 ? clamp( rand(abmrng(model), Normal(peep.soc_h, model.mu_std)) , 0, 1 ) : peep.soc_h
+
+			new_soc_v = rand(abmrng(model)) > model.mu_soc_v ? sample(abmrng(model), soc_v_vec_g1, fitness_weights_g1) : rand(abmrng(model))
+			peep.soc_v = model.mu_soc_v > 0.0 ? new_soc_v : peep.soc_v
+            peep.soc_v = model.mu_soc_v > 0.0 ? clamp( rand(abmrng(model), Normal(peep.soc_v, model.mu_std)), 0, 1 ) : peep.soc_v
+
+			new_sens = rand(abmrng(model)) > model.mu_sens ? sample(abmrng(model), sens_vec_g1, fitness_weights_g1) : rand(abmrng(model))
+			peep.sens = model.mu_sens > 0.0 ? new_sens : peep.sens
+            peep.sens = model.mu_sens > 0.0 ? clamp( rand(abmrng(model), Normal(peep.sens, model.mu_std)), 0, 1 ) : peep.sens
+            
+			new_L = rand(abmrng(model)) > model.mu_L ? sample(abmrng(model), L_vec_g1, fitness_weights_g1) : rand(abmrng(model), model.strat_pool)
+			peep.L = model.mu_L > 0.0 ? new_L : peep.L
+
+            new_par = rand(abmrng(model)) > model.mu_parochial ? sample(abmrng(model), parochial_vec_g1, fitness_weights_g1) : rand(abmrng(model), [true, false])
+			peep.parochial = model.mu_parochial > 0.0 ? new_par : peep.parochial
+
+		end
+	end
+end
+
 @agent struct Peep(NoSpaceAgent)
     ###
-    #Heritable characteristics
-	s_young::Float64 #juvenile risk attitude
-    s::Float64 #adult risk attidude
+    #Heritable and developmental characteristics
+	α_young::Float64 #positive impression of environment during juvenile
+	β_young::Float64 #negative impression of environment during juvenile
+	α::Float64 #final positive impression of environment
+	β::Float64 #final negative impression of environment
+    s_child::Float64 #childhood stake
+    s_young::Float64 #juvenile stake
+    s_vec::Vector{Float64} #stake vector
+	s::Float64 #end of lifetime stake
+    s_mean::Float64
+    s_median::Float64
     soc_h::Float64 #weight of horizontal social information
     soc_v::Float64 #weight of vertical and oblique social information
     L::Int64 #learning strategy for vertical and oblique social information
     sens::Float64 #sensitivity to observed ruin
-	group::Int64 #initial wealth
+	group::Int64 #group identity
+    parochial::Bool
     ###
     #Other dynamic characteristics
     log_payoff::Float64
+    avg_payoff::Float64
     models::Vector{Int64}
     old_models::Vector{Int64}
+	α_old::Float64
+	β_old::Float64
     s_old::Float64
     soc_h_old::Float64
     soc_v_old::Float64
@@ -22,467 +361,474 @@ using StatsBase, Random, Distributions, Agents
     sens_old::Float64
 end
 
-
 Base.@kwdef mutable struct Parameters
-    #model parameters
+    # Model parameters
     N::Int64
     n::Int64
+    m::Int64
     T::Int64
     t::Int64
     λ::Float64
-	ν::Float64
-    init_soc_h::Float64
-    init_soc_v::Float64
-    init_sens::Float64
+    aleph::Float64
+    soc_h::Float64
+    soc_v::Float64
+    sens::Float64
+    mu_std::Float64
     mu_soc_h::Float64
     mu_soc_v::Float64
     mu_sens::Float64
+    mu_L::Float64
     strat_pool::Vector{Int64}
-	trimean::Int64
+    mu_parochial::Float64
     abarrier::Bool
+    steps::Int64
+    envshift::Int64
+    λ_shift::Float64
+    aleph_shift::Float64
+    peg_aleph::Bool
+    peg_lambda::Bool
+    mixed::Bool
+    mixed_freq::Float64
+    mixed_aleph::Vector{Float64}
+    mixed_aleph_shift::Vector{Float64}
+    mixed_λ::Vector{Float64}
+    mixed_λ_shift::Vector{Float64}
+    mixed_L::Vector{Int64}
+    parochial::Bool
+    periodic::Bool
     demographic_filter::Bool
     selection::Bool
-    total_ticks::Int64
+    b_coeff::Float64
     seed::Int64
-    steps::Int64
-	envshift::Int64
-	lambda_shift::Float64
-	mixed::Bool
-	mixed_freq::Float64
-	mixed_aleph::Vector{Float64}
-	mixed_aleph_shift::Vector{Float64}
-	mixed_λ::Vector{Float64}
-	mixed_λ_shift::Vector{Float64}
-	mixed_L::Vector{Float64}
-	parochial::Bool
-	periodic::Bool
-    #data
-    s_dist::Vector{Float64}
-    s_median::Float64
-    s_lerror::Float64
-    s_herror::Float64
-    V_dist::Vector{Float64}
-    V_median::Float64
-    V_probsurv::Float64
-    Vbar::Float64
-	Vbar_vec::Vector{Float64}
-	gVbar::Float64
-	Vbar_g0::Float64
-	Vbar_g1::Float64
-    opt_s::Float64
-    opt_payoff::Float64
-    tick::Int64
+    tick::Int64 = 0
+    total_ticks::Int64 = 2500
+    # Data fields with default values
+    s_mean::Float64 = 0.0
+    s_median::Float64 = 0.0
+    s_lerror::Float64 = 0.0
+    s_herror::Float64 = 0.0
+    s_ltail::Float64 = 0.0
+    s_htail::Float64 = 0.0
+    s_end_mean::Float64 = 0.0
+    s_end_median::Float64 = 0.0
+    s_end_lerror::Float64 = 0.0
+    s_end_herror::Float64 = 0.0
+    s_young_mean::Float64 = 0.0
+    s_young_median::Float64 = 0.0
+    s_young_lerror::Float64 = 0.0
+    s_young_herror::Float64 = 0.0
+    s_child_mean::Float64 = 0.0
+    s_child_median::Float64 = 0.0
+    s_child_lerror::Float64 = 0.0
+    s_child_herror::Float64 = 0.0
+    sbar::Float64 = 0.0
+    mean_increment::Float64 = 0.0
+    concentration::Float64 = 0.0
+    concentration_lerror::Float64 = 0.0
+    concentration_herror::Float64 = 0.0
+    s_mean_g0::Float64 = 0.0
+    s_median_g0::Float64 = 0.0
+    s_lerror_g0::Float64 = 0.0
+    s_herror_g0::Float64 = 0.0
+    s_ltail_g0::Float64 = 0.0
+    s_htail_g0::Float64 = 0.0
+    s_end_mean_g0::Float64 = 0.0
+    s_end_median_g0::Float64 = 0.0
+    s_end_lerror_g0::Float64 = 0.0
+    s_end_herror_g0::Float64 = 0.0
+    s_young_mean_g0::Float64 = 0.0
+    s_young_median_g0::Float64 = 0.0
+    s_young_lerror_g0::Float64 = 0.0
+    s_young_herror_g0::Float64 = 0.0
+    s_child_mean_g0::Float64 = 0.0
+    s_child_median_g0::Float64 = 0.0
+    s_child_lerror_g0::Float64 = 0.0
+    s_child_herror_g0::Float64 = 0.0
+    concentration_g0::Float64 = 0.0
+    concentration_lerror_g0::Float64 = 0.0
+    concentration_herror_g0::Float64 = 0.0
+    s_mean_g1::Float64 = 0.0
+    s_median_g1::Float64 = 0.0
+    s_lerror_g1::Float64 = 0.0
+    s_herror_g1::Float64 = 0.0
+    s_ltail_g1::Float64 = 0.0
+    s_htail_g1::Float64 = 0.0
+    s_end_mean_g1::Float64 = 0.0
+    s_end_median_g1::Float64 = 0.0
+    s_end_lerror_g1::Float64 = 0.0
+    s_end_herror_g1::Float64 = 0.0
+    s_young_mean_g1::Float64 = 0.0
+    s_young_median_g1::Float64 = 0.0
+    s_young_lerror_g1::Float64 = 0.0
+    s_young_herror_g1::Float64 = 0.0
+    s_child_mean_g1::Float64 = 0.0
+    s_child_median_g1::Float64 = 0.0
+    s_child_lerror_g1::Float64 = 0.0
+    s_child_herror_g1::Float64 = 0.0
+    concentration_g1::Float64 = 0.0
+    concentration_lerror_g1::Float64 = 0.0
+    concentration_herror_g1::Float64 = 0.0
+    Vbar::Float64 = 0.0
+    Vbar_g0::Float64 = 0.0
+    Vbar_g1::Float64 = 0.0
+    freq_ub::Float64 = 0.0
+    freq_pb::Float64 = 0.0
+    freq_cb::Float64 = 0.0
+    freq_ub_g0::Float64 = 0.0
+    freq_pb_g0::Float64 = 0.0
+    freq_cb_g0::Float64 = 0.0
+    freq_parochial_g0::Float64 = 0.0
+    freq_ub_g1::Float64 = 0.0
+    freq_pb_g1::Float64 = 0.0
+    freq_cb_g1::Float64 = 0.0
+    freq_parochial_g1::Float64 = 0.0
+    # New fields for soc_h statistics
+    soc_h_median::Float64 = 0.0
+    soc_h_lerror::Float64 = 0.0
+    soc_h_herror::Float64 = 0.0
+    soc_h_median_g0::Float64 = 0.0
+    soc_h_lerror_g0::Float64 = 0.0
+    soc_h_herror_g0::Float64 = 0.0
+    soc_h_median_g1::Float64 = 0.0
+    soc_h_lerror_g1::Float64 = 0.0
+    soc_h_herror_g1::Float64 = 0.0
+    # New fields for soc_v statistics
+    soc_v_median::Float64 = 0.0
+    soc_v_lerror::Float64 = 0.0
+    soc_v_herror::Float64 = 0.0
+    soc_v_median_g0::Float64 = 0.0
+    soc_v_lerror_g0::Float64 = 0.0
+    soc_v_herror_g0::Float64 = 0.0
+    soc_v_median_g1::Float64 = 0.0
+    soc_v_lerror_g1::Float64 = 0.0
+    soc_v_herror_g1::Float64 = 0.0
+    # New fields for sens statistics
+    sens_median::Float64 = 0.0
+    sens_lerror::Float64 = 0.0
+    sens_herror::Float64 = 0.0
+    sens_median_g0::Float64 = 0.0
+    sens_lerror_g0::Float64 = 0.0
+    sens_herror_g0::Float64 = 0.0
+    sens_median_g1::Float64 = 0.0
+    sens_lerror_g1::Float64 = 0.0
+    sens_herror_g1::Float64 = 0.0
 end
 
-function median_error(X; f="median", l=0.1, h=0.9)
-	med = f == "median" ? median(X) : mean(X)
-	ϵ⁻ = med - quantile(X, l)
-	ϵ⁺ = quantile(X, h) - med
-	return (med, ϵ⁻, ϵ⁺)
-end
 
-function aleph_transform(aleph; Vb=1)
-	return Vb/(1 - aleph)
-end
 
-function simulate_gambles(λ, א, s;
-	Vb = 1,
-	seasons=5000,
-	rounds=1,
-	abarrier=true
-	)
-
-	log_capital = log( aleph_transform(א, Vb=Vb) )
-	for i in 1:seasons
-
-		rate = 1 / rand( Pareto(λ) )
-
-		for j in 1:rounds
-			if rand() < rate
-				log_capital = log(1 + s)  + log_capital
-			else
-				log_capital = log(1 - s) + log_capital
-			end
-			if abarrier
-				if log_capital < log(Vb)
-					log_capital = -Inf
-					break
-				end
-			end
-		end
-
-		if abarrier
-			if log_capital < log(Vb)
-				log_capital = -Inf
-				break
-			end
-		end
-
-	end
-
-	return log_capital
-
-end
-
-function sample_environment!(model)
-	for a ∈ allagents(model)
-        est = 0
-        for t ∈ 1:model.t
-			if model.mixed
-				est += rand(abmrng(model)) < 1 / rand( abmrng(model), Pareto(model.mixed_λ[a.group]) ) ? 1 : 0
-			else
-            	est += rand(abmrng(model)) < 1 / rand( abmrng(model), Pareto(model.λ) ) ? 1 : 0
-			end
-        end
-        est = est / model.t
-        a.s_young = 2*est - 1 > 0 ? 2*est - 1 : 0.0
-    end
-end
-
-function pool!(model)
-    for a ∈ shuffle(abmrng(model), allagents(model)|>collect)
-        models = filter(x -> x.id ∈ a.models, allagents(model)|>collect)
-        if model.parochial
-			models = filter(x -> x.group == a.group, models)
-		end
-		if length(models) > 0
-			model_stakes = [b.s_young for b ∈ models]
-        	a.s = (1 - a.soc_h)*a.s_young + (a.soc_h)*mean(model_stakes)
-		end
-    end
-end
-
-function learn_from_olds!(model)
-	for a in allagents(model)
-		a.old_models = sample(abmrng(model), 1:model.N, model.n)
-		old_models = filter(x -> x.id ∈ a.old_models, allagents(model)|>collect)
-
-		if model.demographic_filter
-			old_models = filter(x -> x.log_payoff > 0.0, old_models)
-		end
-		
-		if model.mixed && model.parochial
-			old_models = filter(x -> x.group == a.group, old_models)
-		end
-
-        if length(old_models) > 0
-            old_s = [b.s_old for b in old_models]
-            old_payoffs = [b.log_payoff for b in old_models]
-            if a.L == 1
-				trim = clamp( model.trimean, 0, ceil(model.n/2) - 1 )
-				old_s = sort(old_s)
-				for i in 1:trim
-					pop!(old_s)
-					popfirst!(old_s)
-				end
-				learned_s = mean(old_s)
-            elseif a.L == 2
-                learned_s = median(old_s)
-            elseif a.L == 3
-                learned_s = old_s[ findmax(old_payoffs)[2] ]
-            end
-            
-            a.s = (1 - a.soc_v)*a.s + a.soc_v*learned_s
-        end
-	end
-end
-
-function pull_stake!(model, agent)
-	if agent.sens > 0.0
-		agent.s = clamp(
-			agent.s - rand( abmrng(model), Exponential(agent.sens) ),
-			0.0, 1.0
-		)
-	end
-end
-
-function play!(model)
-
-	for a ∈ allagents(model)
-		a.log_payoff = model.mixed ? log(model.mixed_aleph[a.group]) : log(model.ν)
-	end
-	
-	for i in 1:model.T
-
-		for a ∈ allagents(model)
-			if model.mixed
-				a.log_payoff += rand(abmrng(model)) < 1 / rand(abmrng(model), Pareto(model.mixed_λ[a.group]) ) ? log(1 + a.s) : log(1 - a.s) 
-			else
-				a.log_payoff += rand(abmrng(model)) < 1 / rand(abmrng(model), Pareto(model.λ) ) ? log(1 + a.s) : log(1 - a.s) 
-			end
-		end
-	
-		if model.abarrier
-			for a ∈ allagents(model)
-				if a.log_payoff != -Inf
-
-					if a.log_payoff < 0.0
-						a.log_payoff = -Inf
-                        for b ∈ filter(
-						x -> a.id ∈ x.models, 
-						allagents(model)|>collect
-						)
-						    if b.log_payoff > 0.0 && abs(b.s - a.s) < model.init_sens
-                                b.s = pull_stake!(model, b)
-                            end
-                        end
-					end
-
-				end
-			end
-		end
-
-	end
-
-end
-
-function pass_the_torch!(model)
-	for a in allagents(model)|>collect
-		a.s_old = a.s
-	    a.soc_h_old = a.soc_h
-	    a.soc_v_old = a.soc_v
-	    a.L_old = a.L
-	    a.sens_old = a.sens
-		a.soc_v = rand(abmrng(model)) < model.mu_soc_v ? abs(a.soc_v - 1.0) : a.soc_v
-	end
-end
-
-function initialize_pessimistic_learning(;
-	N = 10000,
-    n = 25,
-	T = 1000,
-	t = 25,
-    λ = 2.5,
-    aleph = 0.5,
-	init_soc_h = 1.0,
-    init_soc_v = 1.0,
-	init_sens = 0.1,
+function initialize_pessimistic_learning(; 
+    N = 1000,
+    n = 15,
+    m = 15,
+    T = 100,
+    t = 15,
+    u = 0.65,
+    aleph = 0.05,
+    soc_h = 0.0,
+    soc_v = 0.0,
+    sens = 0.0,
+    mu_std = 0.0,
     mu_soc_h = 0.0,
     mu_soc_v = 0.0,
     mu_sens = 0.0,
-	strategies = "UB",
-	trimean = 0,
+    mu_L = 0.0,
+    strategies = "UB",
+    mu_parochial = 0.0,
     abarrier = true,
-	demographic_filter = true,
-	selection = false,
-	seed = 123456789,
-	total_ticks = 5,
     steps = 3,
-	envshift = 1000,
-	lambda_shift = 6.0,
-	mixed = false,
-	mixed_freq = 0.5,
-	mixed_aleph1 = 0.65,
-	mixed_aleph2 = 0.95,
-	mixed_aleph1_shift = 0.95,
-	mixed_aleph2_shift = 0.95,
-	mixed_λ1 = 2.5,
-	mixed_λ2 = 6.0,
-	mixed_λ1_shift = 6.0,
-	mixed_λ2_shift = 6.0,
-	mixed_L1 = 1,
-	mixed_L2 = 1,
-	parochial = false,
-	periodic = false
+    envshift = 5000,
+    u_shift = 6.0,
+    aleph_shift = 0.95,
+    peg_aleph = false,
+    peg_lambda = false,
+    mixed = false,
+    mixed_freq = 0.5,
+    mixed_aleph1 = 0.05,
+    mixed_aleph2 = 0.95,
+    mixed_aleph1_shift = 0.95,
+    mixed_aleph2_shift = 0.95,
+    mixed_u1 = 0.6,
+    mixed_u2 = 0.75,
+    mixed_λ1_shift = 0.65,
+    mixed_λ2_shift = 0.65,
+    mixed_L1 = 1,
+    mixed_L2 = 1,
+    parochial = false,
+    periodic = true,
+    demographic_filter = true,
+    selection = false,
+    b_coeff = 1.0,
+    seed = 123456789
 )
-	rng = Xoshiro(seed)
-	
-	if strategies == "UB"
-		strat_pool = [1]
+    rng = Xoshiro(seed)
 
-	elseif strategies == "CB"
-		strat_pool = [2]
+    # Determine the strategy pool
+    strat_pool = strategies == "UB"      ? [1] :
+                 strategies == "CB"      ? [2] :
+                 strategies == "PB"      ? [3] :
+                 strategies == "UB&CB"   ? [1, 2] :
+                 strategies == "UB&PB"   ? [1, 3] :
+                 strategies == "CB&PB"   ? [2, 3] :
+                 strategies == "ALL"     ? [1, 2, 3] :
+                 error("Invalid learning strategy pool.")
 
-	elseif strategies == "PB"
-		strat_pool = [3]
+    # Initialize model properties with default values for data fields
+    properties = Parameters(
+        N = N,
+        n = n,
+        m = m,
+        T = T,
+        t = t,
+        λ = u,
+        aleph = aleph,
+        soc_h = soc_h,
+        soc_v = soc_v,
+        sens = sens,
+        mu_std = mu_std,
+        mu_soc_h = mu_soc_h,
+        mu_soc_v = mu_soc_v,
+        mu_sens = mu_sens,
+        mu_L = mu_L,
+        strat_pool = strat_pool,
+        mu_parochial = mu_parochial,
+        abarrier = abarrier,
+        steps = steps,
+        envshift = envshift,
+        λ_shift = u_shift,
+        aleph_shift = aleph_shift,
+        peg_aleph = peg_aleph,
+        peg_lambda = peg_lambda,
+        mixed = mixed,
+        mixed_freq = mixed_freq,
+        mixed_aleph = [mixed_aleph1, mixed_aleph2],
+        mixed_aleph_shift = [mixed_aleph1_shift, mixed_aleph2_shift],
+        mixed_λ = [mixed_u1, mixed_u2],
+        mixed_λ_shift = [mixed_λ1_shift, mixed_λ2_shift],
+        mixed_L = [mixed_L1, mixed_L2],
+        parochial = parochial,
+        periodic = periodic,
+        demographic_filter = demographic_filter,
+        selection = selection,
+        b_coeff = b_coeff,
+        seed = seed
+        # Data fields have default values in the struct definition
+    )
 
-	elseif strategies == "UB&CB"
-		strat_pool = [1, 2]
-
-	elseif strategies == "UB&PB"
-		strat_pool = [1, 3]
-
-	elseif strategies == "CB&PB"
-		strat_pool = [2, 3]
-
-	elseif strategies == "ALL"
-		strat_pool = [1, 2, 3]
-
-	else
-		error(raw"Invalid learning strategy pool.")
-	end
-
-	#survmean, fullmean, probsurv = sim_payoffs(λ, 0:0.005:1, ν)
-	#opt_payoff, opt_idx = findmax( filter(x -> !isnan(x), probsurv.*survmean ) )
-	#opt_s = (0:0.005:1|>collect)[ opt_idx ]
-	
-	properties = Parameters(
-		#model parameters
-	    N,
-	    n,
-        T,
-        t,
-        λ,
-        aleph_transform(aleph),
-        init_soc_h,
-        init_soc_v,
-		init_sens,
-	    mu_soc_h,
-	    mu_soc_v,
-		mu_sens,
-	    strat_pool,
-		trimean,
-        abarrier,
-		demographic_filter,
-		selection,
-        total_ticks,
-        seed,
-        steps,
-		envshift,
-		lambda_shift,
-		mixed,
-		mixed_freq,
-		[aleph_transform(mixed_aleph1), aleph_transform(mixed_aleph2)],
-		[aleph_transform(mixed_aleph1_shift), aleph_transform(mixed_aleph2_shift)],
-		[mixed_λ1, mixed_λ2],
-		[mixed_λ1_shift, mixed_λ2_shift],
-		[mixed_L1, mixed_L2],
-		parochial,
-		periodic,
-        #data
-        Vector{Float64}(),
-        0.0,
-        0.0,
-        0.0,
-        Vector{Float64}(),
-        0.0,
-        0.0,
-		0.0,
-		Vector{Float64}(),
-		0.0,
-		0.0,
-		0.0,
-		0.0,
-		0.0,
-        0
-	)
-
-	model = StandardABM( 
-		Peep, 
-		nothing;
-		properties = properties,
+    model = StandardABM(
+        Peep,
+        nothing;
+        properties = properties,
         model_step! = model_step!,
-		rng = rng
-	)
+        rng = rng
+    )
 
-	for a in 1:N
-		
-		group = rand(abmrng(model)) < model.mixed_freq ? 1 : 2
+    agent_ids = collect(1:N)
 
-		agent = Peep( 
-			a,
-			0.0,
-            0.0,
-			model.init_soc_h, 
-			init_soc_v,
-			model.mixed ? model.mixed_L[group] : rand(abmrng(model), model.strat_pool),
-            init_sens,
-			group,
-			model.mixed ? model.mixed_aleph[group] : model.ν,
-            sample(
-				abmrng(model), 
-				deleteat!(1:N|>collect, a), 
-				model.n, 
-				replace=false
-			),
-			Vector{Int64}(),
-            0.0,
-            0.0,
-            0.0,
-            0,
-            0.0
-		)
-        new_a = add_agent!(agent, model)
-		
-	end
+    for a_id ∈ agent_ids
+        group = mixed ? (rand(rng) < mixed_freq ? 1 : 2) : 1
 
-	
-    if model.steps == 1
-        sample_environment!(model)
-    elseif model.steps == 2
-        sample_environment!(model)
-        pool!(model)
-    elseif model.steps >= 3
-        sample_environment!(model)
-        pool!(model)
-        play!(model)    
+        # Sample models (excluding the current agent)
+        possible_models = setdiff(agent_ids, [a_id])
+        models = sample(rng, possible_models, n; replace = false)
+
+        # Initialize agent traits
+        peep = Peep(
+            id = a_id,
+            α_young = 1.0,
+            β_young = 1.0,
+            α = 0.0,
+            β = 0.0,
+            s_child = 0.0,
+            s_young = 0.0,
+            s_vec = [],
+            s = 0.0,
+            s_mean = 0.0,
+            s_median = 0.0,
+            soc_h = selection && mu_soc_h > 0.0 ? rand(abmrng(model)) : soc_h,
+            soc_v = selection && mu_soc_v > 0.0 ? rand(abmrng(model)) : soc_v,
+            L = mixed ? model.mixed_L[group] : rand(abmrng(model), strat_pool),
+            sens = selection && mu_sens > 0.0 ? rand(abmrng(model)) : sens,
+            group = group,
+            parochial = mu_parochial > 0 ? rand(abmrng(model), [true, false]) : parochial,
+            log_payoff = 0.0,
+            avg_payoff = 0.0,
+            models = models,
+            old_models = Int[],
+            α_old = 0.0,
+            β_old = 0.0,
+            s_old = 0.0,
+            soc_h_old = 0.0,
+            soc_v_old = 0.0,
+            L_old = 0,
+            sens_old = 0.0
+        )
+        add_agent!(peep, model)
     end
 
-	model.s_dist = [a.s for a ∈ allagents(model)|>collect]
-    model.s_median, model.s_lerror, model.s_herror = median_error(model.s_dist)
+    # Perform initial steps based on the specified number of steps
+    if steps >= 1
+        sample_environment!(model)
+    end
+    if steps >= 2
+        pool!(model)
+    end
+    if steps >= 3
+        play!(model)
+    end
 
-	model.V_dist = [exp(a.log_payoff/(model.T+1)) for a ∈ allagents(model)|>collect]
-	model.V_median = mean(
-			filter(
-				x -> x > 0.0,
-				[exp(a.log_payoff ./ (model.T+1)) for a ∈ allagents(model)|>collect]
-				)
-		)
+	## INITIAL DATA COLLECTION
+    peeps = collect(allagents(model))
 
-	probruin = length(
-		filter(
-			x -> x == 0, 
-			[exp(a.log_payoff/(model.T+1)) for a ∈ allagents(model)|>collect] 
-		)
-	) / model.N
+    # s statistics
+    s_dist = [a.s_mean for a ∈ peeps]
+    model.s_median, model.s_lerror, model.s_herror = median_error(s_dist)
+    model.s_mean, model.s_ltail, model.s_htail = median_error(s_dist, f="mean", l=0.05, h=0.95)
 
-	model.V_probsurv = 1 - probruin
-	model.Vbar = model.V_probsurv * model.V_median
-	push!(model.Vbar_vec, model.Vbar)
+    # s_young statistics
+    s_dist_young = [a.s_young for a ∈ peeps]
+    model.s_young_median, model.s_young_lerror, model.s_young_herror = median_error(s_dist_young)
+    model.s_young_mean, _, _ = median_error(s_dist_young, f="mean")
+    
+    # s_child statistics
+    s_dist_child = [a.s_child for a ∈ peeps]
+    model.s_child_median, model.s_child_lerror, model.s_child_herror = median_error(s_dist_child)
+    model.s_child_mean, _, _ = median_error(s_dist_child, f="mean")
 
-	if model.mixed
-		model.Vbar_g0 = mean( [exp(a.log_payoff/(model.T+1)) for a ∈ filter(x -> x.group == 1, allagents(model)|>collect)] )
-		model.Vbar_g1 = mean( [exp(a.log_payoff/(model.T+1)) for a ∈ filter(x -> x.group == 2, allagents(model)|>collect)] )
-	end
+    # s_end statistics
+    s_dist_end = [a.s for a ∈ peeps]
+    model.s_end_median, model.s_end_lerror, model.s_end_herror = median_error(s_dist_end)
+    model.s_end_mean, _, _ = median_error(s_dist_end, f="mean")
 
-	pass_the_torch!(model)
-	
-	return model
-		
+    #concentration statistics
+    conc_dist = [a.α + a.β for a ∈ peeps]
+    model.concentration, model.concentration_lerror, model.concentration_herror = median_error(conc_dist)
+    
+    # soc_h statistics
+    soc_h_values = [a.soc_h for a ∈ peeps]
+    model.soc_h_median, model.soc_h_lerror, model.soc_h_herror = median_error(soc_h_values)
+
+    # soc_v statistics
+    soc_v_values = [a.soc_v for a ∈ peeps]
+    model.soc_v_median, model.soc_v_lerror, model.soc_v_herror = median_error(soc_v_values)
+
+    # sens statistics
+    sens_values = [a.sens for a ∈ peeps]
+    model.sens_median, model.sens_lerror, model.sens_herror = median_error(sens_values)
+
+    # Existing code for mean values and frequencies
+    model.Vbar = mean(exp.([a.log_payoff / model.T for a ∈ peeps]))
+    
+    model.freq_ub = count(a -> a.L == 1, peeps) / model.N
+    model.freq_cb = count(a -> a.L == 2, peeps) / model.N
+    model.freq_pb = count(a -> a.L == 3, peeps) / model.N
+
+    if model.mixed
+        
+        g0 = filter(a -> a.group == 1, peeps)
+        g1 = filter(a -> a.group == 2, peeps)
+
+        # s statistics per group
+        s_mean_g0 = [a.s_mean for a ∈ g0]
+        model.s_median_g0, model.s_lerror_g0, model.s_herror_g0 = median_error(s_mean_g0)
+        model.s_mean_g0, model.s_ltail_g0, model.s_htail_g0 = median_error(s_mean_g0, f="mean", l=0.05, h=0.95)
+
+        s_young_g0 = [a.s_young for a ∈ g0]
+        model.s_young_median_g0, model.s_young_lerror_g0, model.s_young_herror_g0 = median_error(s_young_g0)
+        model.s_young_mean_g0, _, _ = median_error(s_young_g0, f="mean")
+
+        s_child_g0 = [a.s_child for a ∈ g0]
+        model.s_child_median_g0, model.s_child_lerror_g0, model.s_child_herror_g0 = median_error(s_child_g0)
+        model.s_child_mean_g0, _, _ = median_error(s_child_g0, f="mean")
+
+        s_end_g0 = [a.s for a ∈ g0]
+        model.s_end_median_g0, model.s_end_lerror_g0, model.s_end_herror_g0 = median_error(s_end_g0)
+        model.s_end_mean_g0, _, _ = median_error(s_end_g0, f="mean")
+
+        conc_dist_g0 = [a.α + a.β for a ∈ g0]
+        model.concentration_g0, model.concentration_lerror_g0, model.concentration_herror_g0 = median_error(conc_dist_g0)
+
+        s_mean_g1 = [a.s_mean for a ∈ g1]
+        model.s_median_g1, model.s_lerror_g1, model.s_herror_g1 = median_error(s_mean_g1)
+        model.s_mean_g1, model.s_ltail_g1, model.s_htail_g1 = median_error(s_mean_g1, f="mean", l=0.05, h=0.95)
+
+        s_young_g1 = [a.s_young for a ∈ g1]
+        model.s_young_median_g1, model.s_young_lerror_g1, model.s_young_herror_g1 = median_error(s_young_g1)
+        model.s_young_mean_g1, _, _ = median_error(s_young_g1, f="mean")
+
+        s_child_g1 = [a.s_child for a ∈ g1]
+        model.s_child_median_g1, model.s_child_lerror_g1, model.s_child_herror_g1 = median_error(s_child_g1)
+        model.s_child_mean_g1, _, _ = median_error(s_child_g1, f="mean")
+
+        s_end_g1 = [a.s for a ∈ g1]
+        model.s_end_median_g1, model.s_end_lerror_g1, model.s_end_herror_g1 = median_error(s_end_g1)
+        model.s_end_mean_g1, _, _ = median_error(s_end_g1, f="mean")
+
+        conc_dist_g1 = [a.α + a.β for a ∈ g1]
+        model.concentration_g1, model.concentration_lerror_g1, model.concentration_herror_g1 = median_error(conc_dist_g1)
+
+        # soc_h statistics per group
+        soc_h_values_g0 = [a.soc_h for a ∈ g0]
+        model.soc_h_median_g0, model.soc_h_lerror_g0, model.soc_h_herror_g0 = median_error(soc_h_values_g0)
+
+        soc_h_values_g1 = [a.soc_h for a ∈ g1]
+        model.soc_h_median_g1, model.soc_h_lerror_g1, model.soc_h_herror_g1 = median_error(soc_h_values_g1)
+
+        # soc_v statistics per group
+        soc_v_values_g0 = [a.soc_v for a ∈ g0]
+        model.soc_v_median_g0, model.soc_v_lerror_g0, model.soc_v_herror_g0 = median_error(soc_v_values_g0)
+
+        soc_v_values_g1 = [a.soc_v for a ∈ g1]
+        model.soc_v_median_g1, model.soc_v_lerror_g1, model.soc_v_herror_g1 = median_error(soc_v_values_g1)
+
+        # sens statistics per group
+        sens_values_g0 = [a.sens for a ∈ g0]
+        model.sens_median_g0, model.sens_lerror_g0, model.sens_herror_g0 = median_error(sens_values_g0)
+
+        sens_values_g1 = [a.sens for a ∈ g1]
+        model.sens_median_g1, model.sens_lerror_g1, model.sens_herror_g1 = median_error(sens_values_g1)
+
+        # strategy frequencies per group
+
+        model.freq_ub_g0 = length(filter(x -> x.L == 1, g0)) / length(g0)
+        model.freq_ub_g1 = length(filter(x -> x.L == 1, g1)) / length(g1)
+        
+        model.freq_cb_g0 = length(filter(x -> x.L == 2, g0)) / length(g0)
+        model.freq_cb_g1 = length(filter(x -> x.L == 2, g1)) / length(g1)
+        
+        model.freq_pb_g0 = length(filter(x -> x.L == 3, g0)) / length(g0)
+        model.freq_pb_g1 = length(filter(x -> x.L == 3, g1)) / length(g1)
+
+        model.freq_parochial_g0 = length(filter(x -> x.parochial, g0)) / length(g0)
+        model.freq_parochial_g1 = length(filter(x -> x.parochial, g1)) / length(g1)
+
+    end
+
+    pass_the_torch!(model)
+    return model
 end
+
 
 function model_step!(model)
 
-	if model.tick != 0 && model.tick % model.envshift == 0
+	if model.selection
+		selection!(model)
+	end
+
+	if model.tick != 0 && model.tick % model.envshift == 0 && !model.mixed
 		if model.periodic
-			if model.mixed
-				current1 = [model.mixed_λ[1], model.mixed_aleph[1]]
-				current2 = (model.mixed_λ[2], model.mixed_aleph[2])
-
-				model.mixed_λ[1] = model.mixed_λ_shift[1]
-				model.mixed_λ[2] = model.mixed_λ_shift[2]
-				model.mixed_λ_shift[1] = current1[1]
-				model.mixed_λ_shift[2] = current2[1]
-
-				model.mixed_aleph[1] = model.mixed_aleph_shift[1]
-				model.mixed_aleph[2] = model.mixed_aleph_shift[2]
-				model.mixed_aleph_shift[1] = current1[2]
-				model.mixed_aleph_shift[2] = current2[2]
-			else
-				current = model.λ
-				model.λ = model.lambda_shift
-				model.lambda_shift = current
-			end
+            if !model.peg_lambda
+                current_λ = model.λ
+                model.λ = model.λ_shift
+                model.λ_shift = current_λ
+            end
+   
+            if !model.peg_aleph
+			    current_aleph = model.aleph
+			    model.aleph = model.aleph_shift
+			    model.aleph_shift = current_aleph
+            end
 		else
-			if model.mixed
-				model.mixed_λ[1] = model.mixed_λ_shift[1]
-				model.mixed_λ[2] = model.mixed_λ_shift[2]
-
-				model.mixed_aleph[1] = model.mixed_aleph_shift[1]
-				model.mixed_aleph[2] = model.mixed_aleph_shift[2]
-			else
-				model.λ = model.lambda_shift
-			end
+		    model.λ = model.λ_shift
 		end
 	end
 
@@ -493,54 +839,151 @@ function model_step!(model)
 	model.tick > 0 && learn_from_olds!(model)
 	play!(model) 
 
-	##DATA COLLECTION
-	model.s_dist = [a.s for a ∈ allagents(model)|>collect]
-	model.s_median, model.s_lerror, model.s_herror = median_error(model.s_dist)
-	
+    
+    ## DATA COLLECTION
+    peeps = collect(allagents(model))
 
-    demo_payoffs = filter(
-        x -> x > 0.0,
-        [exp(a.log_payoff / (model.T)) for a ∈ allagents(model)|>collect]
-        )
-    model.V_median = length(demo_payoffs) > 0 ? mean(demo_payoffs) : 0.0
+    # s statistics
+    s_dist = [a.s_mean for a ∈ peeps]
+    model.s_median, model.s_lerror, model.s_herror = median_error(s_dist)
+    model.s_mean, model.s_ltail, model.s_htail = median_error(s_dist, f="mean", l=0.05, h=0.95)
 
-	probruin = length(
-		filter(
-			x -> x == 0, 
-			[exp(a.log_payoff / (model.T)) for a ∈ allagents(model)|>collect] 
-		)
-	) / model.N
+    # s_young statistics
+    s_dist_young = [a.s_young for a ∈ peeps]
+    model.s_young_median, model.s_young_lerror, model.s_young_herror = median_error(s_dist_young)
+    model.s_young_mean, _, _ = median_error(s_dist_young, f="mean")
+    
+    # s_child statistics
+    s_dist_child = [a.s_child for a ∈ peeps]
+    model.s_child_median, model.s_child_lerror, model.s_child_herror = median_error(s_dist_child)
+    model.s_child_mean, _, _ = median_error(s_dist_child, f="mean")
 
-	model.V_probsurv = 1 - probruin
-	model.Vbar = model.V_probsurv * model.V_median
-	push!(model.Vbar_vec, model.Vbar)
-	model.gVbar = geomean(model.Vbar_vec)
+    # s_mean statistics
+    s_dist_end = [a.s for a ∈ peeps]
+    model.s_end_median, model.s_end_lerror, model.s_end_herror = median_error(s_dist_end)
+    model.s_end_mean, _, _ = median_error(s_dist_end, f="mean")
 
-	if model.mixed
-		model.Vbar_g0 = mean( [exp(a.log_payoff/(model.T+1)) for a ∈ filter(x -> x.group == 1, allagents(model)|>collect)] )
-		model.Vbar_g1 = mean( [exp(a.log_payoff/(model.T+1)) for a ∈ filter(x -> x.group == 2, allagents(model)|>collect)] )
-	end
+    # s change statistics
+    s_vecs = [a.s_vec for a in peeps]
+    transposed = [getindex.(s_vecs, i) for i in 1:length(s_vecs[1])]
+	mean_trajectory = mean.(transposed)
+
+    inc = [1.0]
+    for i in 1:length(mean_trajectory)
+        if i > 1
+            push!(inc, inc[i-1]*(mean_trajectory[i]/mean_trajectory[i-1]))
+        end
+    end
+
+    model.sbar = mean(mean_trajectory)
+    model.mean_increment = mean(inc)
+
+    # concentration statistics
+    conc_dist = [a.α + a.β for a ∈ peeps]
+    model.concentration, model.concentration_lerror, model.concentration_herror = median_error(conc_dist)
+    
+    # soc_h statistics
+    soc_h_values = [a.soc_h for a ∈ peeps]
+    model.soc_h_median, model.soc_h_lerror, model.soc_h_herror = median_error(soc_h_values)
+
+    # soc_v statistics
+    soc_v_values = [a.soc_v for a ∈ peeps]
+    model.soc_v_median, model.soc_v_lerror, model.soc_v_herror = median_error(soc_v_values)
+
+    # sens statistics
+    sens_values = [a.sens for a ∈ peeps]
+    model.sens_median, model.sens_lerror, model.sens_herror = median_error(sens_values)
+
+    # Existing code for mean values and frequencies
+    model.Vbar = mean(exp.([a.log_payoff / model.T for a ∈ peeps]))
+    
+    model.freq_ub = count(a -> a.L == 1, peeps) / model.N
+    model.freq_cb = count(a -> a.L == 2, peeps) / model.N
+    model.freq_pb = count(a -> a.L == 3, peeps) / model.N
+
+    if model.mixed
+
+        g0 = filter(a -> a.group == 1, peeps)
+        g1 = filter(a -> a.group == 2, peeps)
+
+        # s statistics g0
+        s_mean_g0 = [a.s_mean for a ∈ g0]
+        model.s_median_g0, model.s_lerror_g0, model.s_herror_g0 = median_error(s_mean_g0)
+        model.s_mean_g0, model.s_ltail_g0, model.s_htail_g0 = median_error(s_mean_g0, f="mean", l=0.05, h=0.95)
+
+        s_young_g0 = [a.s_young for a ∈ g0]
+        model.s_young_median_g0, model.s_young_lerror_g0, model.s_young_herror_g0 = median_error(s_young_g0)
+        model.s_young_mean_g0, _, _ = median_error(s_young_g0, f="mean")
+
+        s_child_g0 = [a.s_child for a ∈ g0]
+        model.s_child_median_g0, model.s_child_lerror_g0, model.s_child_herror_g0 = median_error(s_child_g0)
+        model.s_child_mean_g0, _, _ = median_error(s_child_g0, f="mean")
+
+        s_end_g0 = [a.s for a ∈ g0]
+        model.s_end_median_g0, model.s_end_lerror_g0, model.s_end_herror_g0 = median_error(s_end_g0)
+        model.s_end_mean_g0, _, _ = median_error(s_end_g0, f="mean")
+
+        conc_dist_g0 = [a.α + a.β for a ∈ g0]
+        model.concentration_g0, model.concentration_lerror_g0, model.concentration_herror_g0 = median_error(conc_dist_g0)
+
+        # s statistics g1
+
+        s_mean_g1 = [a.s_mean for a ∈ g1]
+        model.s_median_g1, model.s_lerror_g1, model.s_herror_g1 = median_error(s_mean_g1)
+        model.s_mean_g1, model.s_ltail_g1, model.s_htail_g1 = median_error(s_mean_g1, f="mean", l=0.05, h=0.95)
+
+        s_young_g1 = [a.s_young for a ∈ g1]
+        model.s_young_median_g1, model.s_young_lerror_g1, model.s_young_herror_g1 = median_error(s_young_g1)
+        model.s_young_mean_g1, _, _ = median_error(s_young_g1, f="mean")
+
+        s_child_g1 = [a.s_child for a ∈ g1]
+        model.s_child_median_g1, model.s_child_lerror_g1, model.s_child_herror_g1 = median_error(s_child_g1)
+        model.s_child_mean_g1, _, _ = median_error(s_child_g1, f="mean")
+
+        s_end_g1 = [a.s for a ∈ g1]
+        model.s_end_median_g1, model.s_end_lerror_g1, model.s_end_herror_g1 = median_error(s_end_g1)
+        model.s_end_mean_g1, _, _ = median_error(s_end_g1, f="mean")
+
+        conc_dist_g1 = [a.α + a.β for a ∈ g1]
+        model.concentration_g1, model.concentration_lerror_g1, model.concentration_herror_g1 = median_error(conc_dist_g1)
+
+        # soc_h statistics per group
+        soc_h_values_g0 = [a.soc_h for a ∈ g0]
+        model.soc_h_median_g0, model.soc_h_lerror_g0, model.soc_h_herror_g0 = median_error(soc_h_values_g0)
+
+        soc_h_values_g1 = [a.soc_h for a ∈ g1]
+        model.soc_h_median_g1, model.soc_h_lerror_g1, model.soc_h_herror_g1 = median_error(soc_h_values_g1)
+
+        # soc_v statistics per group
+        soc_v_values_g0 = [a.soc_v for a ∈ g0]
+        model.soc_v_median_g0, model.soc_v_lerror_g0, model.soc_v_herror_g0 = median_error(soc_v_values_g0)
+
+        soc_v_values_g1 = [a.soc_v for a ∈ g1]
+        model.soc_v_median_g1, model.soc_v_lerror_g1, model.soc_v_herror_g1 = median_error(soc_v_values_g1)
+
+        # sens statistics per group
+        sens_values_g0 = [a.sens for a ∈ g0]
+        model.sens_median_g0, model.sens_lerror_g0, model.sens_herror_g0 = median_error(sens_values_g0)
+
+        sens_values_g1 = [a.sens for a ∈ g1]
+        model.sens_median_g1, model.sens_lerror_g1, model.sens_herror_g1 = median_error(sens_values_g1)
+
+        # strategy frequencies per group
+
+        model.freq_ub_g0 = length(filter(x -> x.L == 1, g0)) / length(g0)
+        model.freq_ub_g1 = length(filter(x -> x.L == 1, g1)) / length(g1)
+        
+        model.freq_cb_g0 = length(filter(x -> x.L == 2, g0)) / length(g0)
+        model.freq_cb_g1 = length(filter(x -> x.L == 2, g1)) / length(g1)
+        
+        model.freq_pb_g0 = length(filter(x -> x.L == 3, g0)) / length(g0)
+        model.freq_pb_g1 = length(filter(x -> x.L == 3, g1)) / length(g1)
+
+        model.freq_parochial_g0 = length(filter(x -> x.parochial, g0)) / length(g0)
+        model.freq_parochial_g1 = length(filter(x -> x.parochial, g1)) / length(g1)
+
+    end
 
 	pass_the_torch!(model)
 	
 end
-
-#=
-function sim_payoffs(
-	λ, S, א; 
-	abarrier=true, seasons=1000, rounds=1, n=1000
-	)
-
-	payoffs = ( [
-			exp.( [simulate_gambles(λ, א, s, abarrier=abarrier, seasons=seasons, rounds=rounds) for i ∈ 1:n] ./ seasons )
-			for s ∈ S
-		] )
-	
-	surv = [filter(v -> v >= 1.0, p) for p in payoffs]
-	fullmean = mean.(payoffs)
-	survmean = mean.(surv)
-	prob_surv = length.(surv) ./ n
-
-	return(survmean, fullmean, prob_surv)
-end
-=#
