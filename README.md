@@ -1,6 +1,6 @@
 # PessimisticLearning
 
-Code supplement for the "The Evolution of Similarity-Biased Social Learning" by Alejandro Pérez Velilla, Bret Beheim &amp; Paul E. Smaldino.
+Code supplement for the "The Development of Risk Attitudes and their Cultural Transmission" by Alejandro Pérez Velilla, Bret Beheim &amp; Paul E. Smaldino.
 
 ## Repository details
 
