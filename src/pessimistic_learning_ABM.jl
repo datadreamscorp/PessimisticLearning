@@ -37,6 +37,7 @@ function sample_environment!(model)
 	for a ∈ allagents(model)
         a.α_young = 1.0
 		a.β_young = 1.0
+        push!(a.s_vec_young, 0.5)
         for t ∈ 1:model.t
 			if model.mixed
                 if rand( abmrng(model) ) < model.mixed_λ[a.group]
@@ -52,6 +53,7 @@ function sample_environment!(model)
             		a.β_young += 1
 				end
 			end
+            push!(a.s_vec_young, clamp(2*(a.α_young / (a.α_young + a.β_young)) - 1, 0, 1))
         end
     end
 end
@@ -79,6 +81,8 @@ function pool!(model)
             end
             
 		end
+
+        push!(a.s_vec_young, clamp(2*(a.α_young / (a.α_young + a.β_young)) - 1, 0, 1))
 
         a.α = a.α_young
 		a.β = a.β_young
@@ -149,39 +153,43 @@ function play!(model)
 
 	for a ∈ allagents(model)
 		a.log_payoff = model.mixed ? log(aleph_transform(model.mixed_aleph[a.group])) : log(aleph_transform(model.aleph))
-        a.s_vec = []
+        a.s_vec = [last(a.s_vec_young)]
+        a.payoff_vec = [a.log_payoff]
     end
 	
 	for i ∈ 1:model.T
 
 		for a ∈ allagents(model)
-			
-			u = rand( abmrng(model), Beta(a.α, a.β) )
-			s = kelly_stake(u)
 
-			if model.mixed
-                if rand( abmrng(model) ) < model.mixed_λ[a.group]
-					a.log_payoff += log(1 + s)
-					a.α += 1
-				else
-					a.log_payoff += log(1 - s)
-					a.β += 1
-				end
-			else
-                if rand( abmrng(model) ) < model.λ
-                #if rand( abmrng(model) ) < 1 / rand(abmrng(model), Pareto(model.λ/(1 - model.λ)))
-					a.log_payoff += log(1 + s)
-					a.α += 1
-				else
-					a.log_payoff += log(1 - s)
-					a.β += 1
-				end
-			end
+			if a.log_payoff != -Inf
+                u = rand( abmrng(model), Beta(a.α, a.β) )
+                s = kelly_stake(u)
 
-			mean_beta = a.α / (a.α + a.β)
-			a.s = kelly_stake(mean_beta)
+                if model.mixed
+                    if rand( abmrng(model) ) < model.mixed_λ[a.group]
+                        a.log_payoff += log(1 + s)
+                        a.α += 1
+                    else
+                        a.log_payoff += log(1 - s)
+                        a.β += 1
+                    end
+                    push!(a.payoff_vec, a.log_payoff)
+                else
+                    if rand( abmrng(model) ) < model.λ
+                    #if rand( abmrng(model) ) < 1 / rand(abmrng(model), Pareto(model.λ/(1 - model.λ)))
+                        a.log_payoff += log(1 + s)
+                        a.α += 1
+                    else
+                        a.log_payoff += log(1 - s)
+                        a.β += 1
+                    end
+                    push!(a.payoff_vec, a.log_payoff)
+                end
 
-            if a.log_payoff != -Inf
+                mean_beta = a.α / (a.α + a.β)
+                a.s = kelly_stake(mean_beta)
+
+                #if a.log_payoff != -Inf
 
                 if a.log_payoff < 0.0
                     a.log_payoff = -Inf
@@ -194,7 +202,8 @@ function play!(model)
                         end
                     end
                 end
-
+            else
+                push!(a.payoff_vec, a.log_payoff)
             end
 
             push!(a.s_vec, a.s)
@@ -337,6 +346,7 @@ end
     s_child::Float64 #childhood stake
     s_young::Float64 #juvenile stake
     s_vec::Vector{Float64} #stake vector
+    s_vec_young::Vector{Float64} #young stake vector
 	s::Float64 #end of lifetime stake
     s_mean::Float64
     s_median::Float64
@@ -350,6 +360,7 @@ end
     #Other dynamic characteristics
     log_payoff::Float64
     avg_payoff::Float64
+    payoff_vec::Vector{Float64}
     models::Vector{Int64}
     old_models::Vector{Int64}
 	α_old::Float64
@@ -641,6 +652,7 @@ function initialize_pessimistic_learning(;
             s_child = 0.0,
             s_young = 0.0,
             s_vec = [],
+            s_vec_young = [],
             s = 0.0,
             s_mean = 0.0,
             s_median = 0.0,
@@ -652,6 +664,7 @@ function initialize_pessimistic_learning(;
             parochial = mu_parochial > 0 ? rand(abmrng(model), [true, false]) : parochial,
             log_payoff = 0.0,
             avg_payoff = 0.0,
+            payoff_vec = [],
             models = models,
             old_models = Int[],
             α_old = 0.0,

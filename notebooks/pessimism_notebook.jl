@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.3
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -259,6 +259,101 @@ begin
 	full_payplot
 end
 
+# ╔═╡ fe9e037d-d510-4026-83e0-005a61fa005a
+md"""
+#### Figure 2 - A Tale of Three Brothers
+"""
+
+# ╔═╡ 21c738fa-0e6c-4592-a332-b0a564a23fa2
+begin
+	modelium = initialize_pessimistic_learning(N=3, u = 0.65, soc_h=0.25, aleph = 0.15, n=2, T=100, mu_sens = 1.0, selection=true, seed=47)
+
+	svecs_young = [a.s_vec_young for a in allagents(modelium)|>collect]
+	svecs = [a.s_vec for a in allagents(modelium)|>collect]
+	pvecs = [a.payoff_vec for a in allagents(modelium)|>collect]
+	ruin1 = (filter(x -> x > 0.0, pvecs[2])|>length) + 1
+	ruin2 = (filter(x -> x > 0.0, pvecs[3])|>length) + 1
+	
+	svecs_youngplot = plot(
+		svecs_young[1],
+		ylabel=L"\mathrm{mean\ juvenile\ stake}",
+		xlabel=L"\mathrm{child\ timeline}",
+		ylim=(0.0, 1.0),
+		xticks=([1, 17], [L"0", L"\tau"]),
+		xtickfontsize=12,
+		yticks=([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], [L"%$a" for a in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]]),
+		label="",
+		grid=false,
+		lw=2,
+		dpi=300,
+		color=palette(:lipariS)[7]
+	)
+	plot!(svecs_young[2], color=palette(:lipariS)[6], lw=2, label="")
+	plot!(svecs_young[3], color=palette(:lipariS)[8], lw=2, label="")
+	hline!([2*0.65 - 1], ls=:dash, color=:black, label=L"\mathrm{kelly\ stake}")
+	
+	svecsplot = plot(
+		svecs[1],
+		ylabel=L"\mathrm{mean\ adult\ stake}",
+		xticks=false, 
+		yticks=([0.0, 0.1, 0.2, 0.3, 0.4, 0.5], [L"%$a" for a in [0, 0.1, 0.2, 0.3, 0.4, 0.5]]),
+		label=L"\mathrm{Juan}", 
+		legendfontsize=7,
+		grid=false,
+		lw=2,
+		dpi=300,
+		color=palette(:lipariS)[7]
+	)
+	plot!(svecs[2][1:ruin1], label=L"\mathrm{Roberto}", color=palette(:lipariS)[6], lw=2)
+	plot!(svecs[3][1:ruin2], label=L"\mathrm{Gabriel}", color=palette(:lipariS)[8], lw=2)
+	hline!([s_star(0.65, 0.15)], ls=:dash, color=:black, label=L"\mathrm{optimal\ stake}")
+	scatter!(
+		[ruin1, ruin2],
+		[svecs[2][ruin1], svecs[3][ruin2]],
+		label=L"\mathrm{ruin\ event}",
+		markershape=:xcross,
+		color="black"
+	)
+	
+	pvecsplot = plot(
+		pvecs[1], 
+		xticks=([0, 101], [L"0", L"T"]),
+		yticks=([0, 1, 2, 3, 4, 5, 6], [L"%$a" for a in [0, 1, 2, 3, 4, 5, 6]]),
+		xlabel=L"\mathrm{adult\ timeline}",
+		ylabel=L"\mathrm{log\ wealth}",
+		legend=false, 
+		grid=false,
+		lw=2,
+		dpi=300,
+		color=palette(:lipariS)[7]
+	)
+	plot!(pvecs[2], lw=2, color=palette(:lipariS)[6])
+	plot!(pvecs[3], lw=2, color=palette(:lipariS)[8])
+	scatter!(
+		[ruin1, ruin2],
+		[pvecs[2][ruin1], pvecs[3][ruin2]],
+		markershape=:xcross,
+		color="black"
+	)
+
+	broplot = plot(
+		svecsplot,
+		pvecsplot,
+		layout=(2,1),
+		dpi=300
+	)
+
+	full_broplot = plot(
+		svecs_youngplot,
+		broplot,
+		layout=(1,2)
+	)
+
+	savefig(full_broplot, "../images/fig2_bros.pdf")
+
+	full_broplot
+end
+
 # ╔═╡ f030487a-a4ed-461d-9405-fa69155f6e9e
 begin
 	sens = 0.1
@@ -295,7 +390,7 @@ begin
 	model18 = initialize_pessimistic_learning(N=5000, u = 0.75, aleph = 0.95, soc_h = soc_h, sens = sens, seed=41095108, steps=3)
 
 md"""
-#### Figure 2 - The Effects of Social Trauma
+#### Figure 3 - The Population Effects of Social Trauma
 """
 end
 
@@ -360,7 +455,7 @@ begin
 	)
 	histogram!( 
 		[a.s_mean for a in allagents(model10)|>collect], 
-		bins=20, alpha=0.5, color=palette(:tokyo10)[7]
+		bins=15, alpha=0.5, color=palette(:tokyo10)[7]
 	)
 	vline!([s_star(0.65, 0.5)], lw=1, color="black", ls=:dash, label="")
 
@@ -423,7 +518,7 @@ begin
 		layout=(3,3), link=:all, size=(650, 400)
 	)
 
-	savefig(dev_plot, "../images/fig2_development.pdf")
+	savefig(dev_plot, "../images/fig3_development.pdf")
 	
 	dev_plot
 end
@@ -511,7 +606,7 @@ begin
 	)
 	
 	md"""
-	#### Figure 3 - Baseline Scenario
+	#### Figure 4 - Baseline Scenario
 	"""
 end
 
@@ -714,7 +809,7 @@ begin
 		top_margin=4Plots.mm
 	)
 
-	savefig(indplot, "../images/fig3_peers.pdf")
+	savefig(indplot, "../images/fig4_peers.pdf")
 
 	indplot
 	
@@ -722,7 +817,7 @@ end
 
 # ╔═╡ f3fec0a1-40fc-4168-93a5-bb0648086d64
 md"""
-#### Figure 4 - Elder Influence Enabled
+#### Figure 5 - Elder Influence Enabled
 """
 
 # ╔═╡ aef1aaeb-5cd1-4121-81ab-490a24a89af0
@@ -1146,7 +1241,7 @@ begin
 	
 	eldplot = plot_elder_portfolio( CSV.read("../data/analysis_1.csv", DataFrame) )
 
-	savefig(eldplot, "../images/fig4_elders.pdf")
+	savefig(eldplot, "../images/fig5_elders.pdf")
 
 	eldplot
 	
@@ -1461,7 +1556,7 @@ begin
 	)
 
 	md"""
-	#### Figure 5 - Tails of risk taking
+	#### Figure 6 - Tails of risk taking
 	"""
 end
 
@@ -1740,15 +1835,29 @@ begin
 	
 	staketails = plot(stakedist, tailsplot, layout=(1,2), size=(800, 400))
 
-	savefig(staketails, "../images/fig5_staketails.pdf")
+	savefig(staketails, "../images/fig6_staketails.pdf")
 
 	staketails
 	
 end
 
+# ╔═╡ 223e84bb-404e-4c66-bc3d-242d42c00bc9
+md"""
+#### Figure 7 - Environmental change
+"""
+
+# ╔═╡ 324d8681-82ae-42c0-8e23-91b7ab4a2cd4
+begin
+	envshift_plot = plot_elder_portfolio( CSV.read("../data/analysis_1.csv", DataFrame), envshift=1 )
+	
+	savefig(envshift_plot, "../images/fig7_envshift.pdf")
+	
+	envshift_plot
+end
+
 # ╔═╡ 88e18457-ae1b-4de6-958b-df4f407d0b98
 md"""
-#### Figure 6 - Life Trajectories
+#### Figure 8 - Life Trajectories
 """
 
 # ╔═╡ 43b13c02-86ac-4620-b62b-a81e98a173a4
@@ -1761,9 +1870,9 @@ begin
 		inc = [1.0]
 
 		if !up
-			d = -0.05
+			d = -0.02
 		else
-			d = 0.05
+			d = 0.03
 		end
 		
 		for i in 1:length(mean_trajectory)
@@ -1776,14 +1885,14 @@ begin
 			lw=2, color=c, 
 			label=L"%$(model.aleph)", 
 			legendtitle=L"\aleph", 
-			ylim=(0.6, 1.3),
+			ylim=(0.7, 1.1),
 			xlabel=L"\mathrm{adult\ lifetime}",
 			xlabelfontsize=18,
 			ylabel=L"\mathrm{proportional\ stake\ change}",
 			ylabelfontsize=13,
 			yticks=(
-			[0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2], 
-			[L"%$a" for a in [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2]]
+			[0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6], 
+			[L"%$a" for a in [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]]
 			),
 			xticks=(
 			[0, 25, 50, 75, 100], 
@@ -1805,9 +1914,9 @@ begin
 		inc = [1.0]
 
 		if !up
-			d = -0.05
+			d = -0.02
 		else
-			d = 0.05
+			d = 0.03
 		end
 		
 		for i in 1:length(mean_trajectory)
@@ -1822,7 +1931,7 @@ begin
 		)
 		annotate!(
 			[90], [inc[90]+d], 
-			[text(L"\bar{s} = %$(round(mean(mean_trajectory), digits=2))", color=c)]
+			[text(L"\bar{s} = %$(round(mean(mean_trajectory), digits=2))", 14, color=c)]
 		)
 	end
 
@@ -2047,9 +2156,9 @@ begin
 		
 	end
 	
-	lifeplot = plot_life_trajectory(modelio, up=true)
-	plot_life_trajectory!(modelio2, c=palette(:romaO10)[3])
-	plot_life_trajectory!(modelio3, c=palette(:romaO10)[6])
+	lifeplot = plot_life_trajectory(modelio4, up=true)
+	plot_life_trajectory!(modelio5, c=palette(:romaO10)[3], up=true)
+	plot_life_trajectory!(modelio6, c=palette(:romaO10)[6])
 
 	full_lifeplot = plot(
 		lifeplot, 
@@ -2058,7 +2167,7 @@ begin
 		size=(600, 500)
 	)
 	
-	savefig(full_lifeplot, "../images/fig6_lifeplot.pdf")
+	savefig(full_lifeplot, "../images/fig8_lifeplot.pdf")
 
 	full_lifeplot
 end
@@ -2255,7 +2364,7 @@ begin
 	)
 
 md"""
-#### Figure 7 - Mixed Populations
+#### Figure 9 - Mixed Populations
 """
 	
 end
@@ -2527,7 +2636,7 @@ begin
 	
 	mixedplot = full_risk_profile(g0u75_g1u75)
 
-	savefig(mixedplot, "../images/fig7_mixed.pdf")
+	savefig(mixedplot, "../images/fig9_mixed.pdf")
 
 	mixedplot
 end
@@ -2969,23 +3078,9 @@ begin
 	timeplots_full
 end
 
-# ╔═╡ 223e84bb-404e-4c66-bc3d-242d42c00bc9
-md"""
-#### Figure S4
-"""
-
-# ╔═╡ 324d8681-82ae-42c0-8e23-91b7ab4a2cd4
-begin
-	envshift_plot = plot_elder_portfolio( CSV.read("../data/analysis_1.csv", DataFrame), envshift=1 )
-	
-	savefig(envshift_plot, "../images/sup4_envshift.pdf")
-	
-	envshift_plot
-end
-
 # ╔═╡ 656b3a41-1ceb-4637-af43-81b3e4d25832
 md"""
-#### Figure S5
+#### Figure S4
 """
 
 # ╔═╡ 87c21ae5-79ec-4481-9c80-4e72c113a7be
@@ -3075,7 +3170,7 @@ begin
 		bottom_margin=4.75Plots.mm
 	)
 
-	savefig(pbparoch_plot, "../images/sup5_pbparoch.pdf")
+	savefig(pbparoch_plot, "../images/sup4_pbparoch.pdf")
 
 	pbparoch_plot
 end
@@ -3085,7 +3180,210 @@ md"""
 #### Figure S6
 """
 
+# ╔═╡ 7e61b751-7395-43a6-9f91-3d9151d0890e
+begin
+	function plot_opt_elders(
+		dat,
+		aleph; 
+		ylim = (0.4, 1.15), 
+		xlab = L"\mathrm{number\ of\ sampled\ peers\ } (n)",
+		ylab = true,
+		title = true,
+		legend = true
+		)
+		
+		dat1 = dat[
+			dat.time .== 2500 .&&
+			dat.aleph .== aleph
+			,:]
+	
+		dat1_l2 = dat1[dat1.u .== 0.55, :]
+		dat1_l3 = dat1[dat1.u .== 0.6, :]
+		dat1_l6 = dat1[dat1.u .== 0.65, :]
+
+		mdatl2_0 = dat1_l2[(dat1_l2.m .== 1), :]
+		mdatl2_1 = dat1_l2[(dat1_l2.m .== 5), :]
+		mdatl2_2 = dat1_l2[(dat1_l2.m .== 10), :]
+		mdatl2_3 = dat1_l2[(dat1_l2.m .== 15), :]
+
+		grouped_vbar0 = combine(
+			groupby(mdatl2_0, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar1 = combine(
+			groupby(mdatl2_1, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar2 = combine(
+			groupby(mdatl2_2, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar3 = combine(
+			groupby(mdatl2_3, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+
+		mdatl3_0 = dat1_l3[(dat1_l3.m .== 1), :]
+		mdatl3_1 = dat1_l3[(dat1_l3.m .== 5), :]
+		mdatl3_2 = dat1_l3[(dat1_l3.m .== 10), :]
+		mdatl3_3 = dat1_l3[(dat1_l3.m .== 15), :]
+
+		grouped_vbar02 = combine(
+			groupby(mdatl3_0, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar4 = combine(
+			groupby(mdatl3_1, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar5 = combine(
+			groupby(mdatl3_2, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar6 = combine(
+			groupby(mdatl3_3, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+
+		mdatl6_0 = dat1_l6[(dat1_l6.m .== 1), :]
+		mdatl6_1 = dat1_l6[(dat1_l6.m .== 5), :]
+		mdatl6_2 = dat1_l6[(dat1_l6.m .== 10), :]
+		mdatl6_3 = dat1_l6[(dat1_l6.m .== 15), :]
+
+		grouped_vbar03 = combine(
+			groupby(mdatl6_0, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar7 = combine(
+			groupby(mdatl6_1, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar8 = combine(
+			groupby(mdatl6_2, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar9 = combine(
+			groupby(mdatl6_3, :n), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		
+		tauplot1 = plot(
+		    grouped_vbar1.n, grouped_vbar0.mean_Vbar, 
+			xlabelfontsize = 15,
+			palette=cgrad(:matter, 5, categorical = true)[2:end],
+			ylabel = ylab ? L"\bar{V} \left.\right|_{\aleph = %$(aleph)}" : "",
+			ylabelfontsize = 15,
+			legend = false,
+			legendtitle = L"m",
+		    label = L"5",
+			lw = 2,
+			grid = false,
+			title = title ? L"\epsilon = 0.05" : "",
+			xticks = ([1, 5, 10, 15], [L"1", L"5", L"10", L"15"]),
+			yticks = ([0.5, 0.75, 1.0], [L"0.5", L"0.75", L"1.0"]),
+			ylim = ylim
+			)
+		plot!(
+		    grouped_vbar2.n, grouped_vbar1.mean_Vbar, 
+		    fillalpha=0.2, label = L"10", lw=2,
+		)
+		plot!(
+		    grouped_vbar3.n, grouped_vbar2.mean_Vbar,
+		    fillalpha=0.2, label = L"15", lw=2,
+		)
+		plot!(
+		    grouped_vbar0.n, grouped_vbar3.mean_Vbar,
+		    fillalpha=0.2, label = L"1", lw=2,
+		)
+	
+		tauplot2 = plot(
+		    grouped_vbar4.n, grouped_vbar02.mean_Vbar, 
+			xlabel = xlab,
+			xlabelfontsize = 15,
+			palette=cgrad(:matter, 5, categorical = true)[2:end],
+			ylabelfontsize = 15,
+			legend = false,
+			legendtitle = L"n",
+		    label = L"5",
+			lw = 2,
+			grid = false,
+			title = title ? L"\epsilon = 0.10" : "",
+			xticks = ([1, 5, 10, 15], [L"1", L"5", L"10", L"15"]),
+			yticks = false,
+			ylim = ylim
+			)
+		plot!(
+		    grouped_vbar5.n, grouped_vbar4.mean_Vbar, 
+		    fillalpha=0.2, label = L"10", lw=2,
+		)
+		plot!(
+		    grouped_vbar6.n, grouped_vbar5.mean_Vbar,
+		    fillalpha=0.2, label = L"15", lw=2,
+		)
+		plot!(
+		    grouped_vbar02.n, grouped_vbar6.mean_Vbar,
+		    fillalpha=0.2, label = L"1", lw=2,
+		)
+	
+		tauplot3 = plot(
+		    grouped_vbar7.n, grouped_vbar03.mean_Vbar, 
+			xlabelfontsize = 15,
+			palette=cgrad(:matter, 5, categorical = true)[2:end],
+			ylabelfontsize = 15,
+			legend = legend,
+			legendtitle = L"m",
+		    label = L"1",
+			lw = 2,
+			grid=false,
+			title = title ? L"\epsilon = 0.15" : "",
+			xticks = ([1, 5, 10, 15], [L"1", L"5", L"10", L"15"]),
+			yticks = false,
+			ylim = ylim
+			)
+		plot!(
+		    grouped_vbar8.n, grouped_vbar7.mean_Vbar, 
+		    fillalpha=0.2, label = L"5", lw=2,
+		)
+		plot!(
+		    grouped_vbar9.n, grouped_vbar8.mean_Vbar,
+		    fillalpha=0.2, label = L"10", lw=2,
+		)
+		plot!(
+		    grouped_vbar03.n, grouped_vbar9.mean_Vbar,
+		    fillalpha=0.2, label = L"15", lw=2,
+		)
+	
+		return plot(
+			tauplot1, tauplot2, tauplot3,
+			layout = (1,3)
+		)
+		
+	end
+	
+	modelnum_plot = plot(
+		plot_opt_elders(
+			CSV.read("../data/analysis_1.csv", DataFrame), 
+			0.05, xlab="", legend=false
+		),
+		plot_opt_elders(
+			CSV.read("../data/analysis_1.csv", DataFrame), 
+			0.5, title=false, xlab="", legend=false
+		),
+		plot_opt_elders(
+			CSV.read("../data/analysis_1.csv", DataFrame), 
+			0.95, title=false, legend=:bottomright
+		),
+		layout=(3,1), size=(600, 600), bottom_margin=0Plots.mm
+	)
+
+	savefig(modelnum_plot, "../images/sup5_modelnum.pdf")
+
+	modelnum_plot
+end
+
 # ╔═╡ f4ee25e4-626e-4d72-b4b5-dd1f9f389f8c
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	function plot_opt_peers(
 		dat,
@@ -3274,208 +3572,7 @@ begin
 		layout=(3,1), size=(600, 600), bottom_margin=0Plots.mm
 	)
 end
-
-# ╔═╡ edefc6bc-c8ab-47aa-bb89-52eec99790f3
-md"""
-#### Figure S7
-"""
-
-# ╔═╡ 7e61b751-7395-43a6-9f91-3d9151d0890e
-begin
-	function plot_opt_elders(
-		dat,
-		aleph; 
-		ylim = (0.4, 1.15), 
-		xlab = L"\mathrm{number\ of\ sampled\ peers\ } (n)",
-		ylab = true,
-		title = true,
-		legend = true
-		)
-		
-		dat1 = dat[
-			dat.time .== 2500 .&&
-			dat.aleph .== aleph
-			,:]
-	
-		dat1_l2 = dat1[dat1.u .== 0.55, :]
-		dat1_l3 = dat1[dat1.u .== 0.6, :]
-		dat1_l6 = dat1[dat1.u .== 0.65, :]
-
-		mdatl2_0 = dat1_l2[(dat1_l2.m .== 1), :]
-		mdatl2_1 = dat1_l2[(dat1_l2.m .== 5), :]
-		mdatl2_2 = dat1_l2[(dat1_l2.m .== 10), :]
-		mdatl2_3 = dat1_l2[(dat1_l2.m .== 15), :]
-
-		grouped_vbar0 = combine(
-			groupby(mdatl2_0, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar1 = combine(
-			groupby(mdatl2_1, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar2 = combine(
-			groupby(mdatl2_2, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar3 = combine(
-			groupby(mdatl2_3, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-
-		mdatl3_0 = dat1_l3[(dat1_l3.m .== 1), :]
-		mdatl3_1 = dat1_l3[(dat1_l3.m .== 5), :]
-		mdatl3_2 = dat1_l3[(dat1_l3.m .== 10), :]
-		mdatl3_3 = dat1_l3[(dat1_l3.m .== 15), :]
-
-		grouped_vbar02 = combine(
-			groupby(mdatl3_0, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar4 = combine(
-			groupby(mdatl3_1, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar5 = combine(
-			groupby(mdatl3_2, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar6 = combine(
-			groupby(mdatl3_3, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-
-		mdatl6_0 = dat1_l6[(dat1_l6.m .== 1), :]
-		mdatl6_1 = dat1_l6[(dat1_l6.m .== 5), :]
-		mdatl6_2 = dat1_l6[(dat1_l6.m .== 10), :]
-		mdatl6_3 = dat1_l6[(dat1_l6.m .== 15), :]
-
-		grouped_vbar03 = combine(
-			groupby(mdatl6_0, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar7 = combine(
-			groupby(mdatl6_1, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar8 = combine(
-			groupby(mdatl6_2, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar9 = combine(
-			groupby(mdatl6_3, :n), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		
-		tauplot1 = plot(
-		    grouped_vbar1.n, grouped_vbar0.mean_Vbar, 
-			xlabelfontsize = 15,
-			palette=cgrad(:matter, 5, categorical = true)[2:end],
-			ylabel = ylab ? L"\bar{V} \left.\right|_{\aleph = %$(aleph)}" : "",
-			ylabelfontsize = 15,
-			legend = false,
-			legendtitle = L"m",
-		    label = L"5",
-			lw = 2,
-			grid = false,
-			title = title ? L"\epsilon = 0.05" : "",
-			xticks = ([1, 5, 10, 15], [L"1", L"5", L"10", L"15"]),
-			yticks = ([0.5, 0.75, 1.0], [L"0.5", L"0.75", L"1.0"]),
-			ylim = ylim
-			)
-		plot!(
-		    grouped_vbar2.n, grouped_vbar1.mean_Vbar, 
-		    fillalpha=0.2, label = L"10", lw=2,
-		)
-		plot!(
-		    grouped_vbar3.n, grouped_vbar2.mean_Vbar,
-		    fillalpha=0.2, label = L"15", lw=2,
-		)
-		plot!(
-		    grouped_vbar0.n, grouped_vbar3.mean_Vbar,
-		    fillalpha=0.2, label = L"1", lw=2,
-		)
-	
-		tauplot2 = plot(
-		    grouped_vbar4.n, grouped_vbar02.mean_Vbar, 
-			xlabel = xlab,
-			xlabelfontsize = 15,
-			palette=cgrad(:matter, 5, categorical = true)[2:end],
-			ylabelfontsize = 15,
-			legend = false,
-			legendtitle = L"n",
-		    label = L"5",
-			lw = 2,
-			grid = false,
-			title = title ? L"\epsilon = 0.10" : "",
-			xticks = ([1, 5, 10, 15], [L"1", L"5", L"10", L"15"]),
-			yticks = false,
-			ylim = ylim
-			)
-		plot!(
-		    grouped_vbar5.n, grouped_vbar4.mean_Vbar, 
-		    fillalpha=0.2, label = L"10", lw=2,
-		)
-		plot!(
-		    grouped_vbar6.n, grouped_vbar5.mean_Vbar,
-		    fillalpha=0.2, label = L"15", lw=2,
-		)
-		plot!(
-		    grouped_vbar02.n, grouped_vbar6.mean_Vbar,
-		    fillalpha=0.2, label = L"1", lw=2,
-		)
-	
-		tauplot3 = plot(
-		    grouped_vbar7.n, grouped_vbar03.mean_Vbar, 
-			xlabelfontsize = 15,
-			palette=cgrad(:matter, 5, categorical = true)[2:end],
-			ylabelfontsize = 15,
-			legend = legend,
-			legendtitle = L"m",
-		    label = L"1",
-			lw = 2,
-			grid=false,
-			title = title ? L"\epsilon = 0.15" : "",
-			xticks = ([1, 5, 10, 15], [L"1", L"5", L"10", L"15"]),
-			yticks = false,
-			ylim = ylim
-			)
-		plot!(
-		    grouped_vbar8.n, grouped_vbar7.mean_Vbar, 
-		    fillalpha=0.2, label = L"5", lw=2,
-		)
-		plot!(
-		    grouped_vbar9.n, grouped_vbar8.mean_Vbar,
-		    fillalpha=0.2, label = L"10", lw=2,
-		)
-		plot!(
-		    grouped_vbar03.n, grouped_vbar9.mean_Vbar,
-		    fillalpha=0.2, label = L"15", lw=2,
-		)
-	
-		return plot(
-			tauplot1, tauplot2, tauplot3,
-			layout = (1,3)
-		)
-		
-	end
-	
-	plot(
-		plot_opt_elders(
-			CSV.read("../data/analysis_1.csv", DataFrame), 
-			0.05, xlab="", legend=false
-		),
-		plot_opt_elders(
-			CSV.read("../data/analysis_1.csv", DataFrame), 
-			0.5, title=false, xlab="", legend=false
-		),
-		plot_opt_elders(
-			CSV.read("../data/analysis_1.csv", DataFrame), 
-			0.95, title=false, legend=:bottomright
-		),
-		layout=(3,1), size=(600, 600), bottom_margin=0Plots.mm
-	)
-end
+  ╠═╡ =#
 
 # ╔═╡ b9d9f726-e94e-4a95-815b-06a77e3c605b
 # ╠═╡ disabled = true
@@ -3690,6 +3787,8 @@ end
 # ╟─1f7f1128-8eea-4695-b8cd-044d7c91890b
 # ╟─ffd166fa-9d48-477a-8d16-f5e866551dfc
 # ╟─b739131f-a173-4994-8143-d6c52ac07cb3
+# ╟─fe9e037d-d510-4026-83e0-005a61fa005a
+# ╟─21c738fa-0e6c-4592-a332-b0a564a23fa2
 # ╟─f030487a-a4ed-461d-9405-fa69155f6e9e
 # ╟─41f7d1c6-2a94-4fdf-a23e-6e93502cddd7
 # ╟─5e5d671d-0b35-4404-b022-c2fe8bdde7c2
@@ -3698,6 +3797,8 @@ end
 # ╟─aef1aaeb-5cd1-4121-81ab-490a24a89af0
 # ╟─326013e3-69fa-4ba2-9381-ccfadbf00613
 # ╟─6ac78a6a-aa27-4ea0-8e49-e469186dfce8
+# ╟─223e84bb-404e-4c66-bc3d-242d42c00bc9
+# ╟─324d8681-82ae-42c0-8e23-91b7ab4a2cd4
 # ╟─88e18457-ae1b-4de6-958b-df4f407d0b98
 # ╟─43b13c02-86ac-4620-b62b-a81e98a173a4
 # ╟─80f6d4ac-3036-4e7a-9ab7-31d0644ec6ea
@@ -3709,14 +3810,11 @@ end
 # ╟─2fbddc1c-6d2c-4195-9366-0e7a483450fc
 # ╟─077c7aec-998a-4295-9426-85d254d251f7
 # ╟─3dc40146-3fdb-4d00-a288-571c47a45041
-# ╟─223e84bb-404e-4c66-bc3d-242d42c00bc9
-# ╟─324d8681-82ae-42c0-8e23-91b7ab4a2cd4
 # ╟─656b3a41-1ceb-4637-af43-81b3e4d25832
 # ╟─87c21ae5-79ec-4481-9c80-4e72c113a7be
 # ╟─f1d25cf9-b070-4acc-8431-3c24a928da62
-# ╟─f4ee25e4-626e-4d72-b4b5-dd1f9f389f8c
-# ╟─edefc6bc-c8ab-47aa-bb89-52eec99790f3
 # ╟─7e61b751-7395-43a6-9f91-3d9151d0890e
+# ╟─f4ee25e4-626e-4d72-b4b5-dd1f9f389f8c
 # ╟─b9d9f726-e94e-4a95-815b-06a77e3c605b
 # ╟─ebf1dade-ce5e-42dd-a687-1bb8791eb7ab
 # ╟─c8795305-655c-47bd-a385-e711f0ecc41d
