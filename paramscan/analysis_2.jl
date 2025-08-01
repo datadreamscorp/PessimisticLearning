@@ -1,10 +1,10 @@
 #############
-#ANALYSIS 2 - PAROCHIALISM AND THE EFFECTS OF STRATIFIED POPULATIONS
+#ANALYSIS 2 - STRATIFIED POPULATIONS
 using Pkg
 Pkg.activate("..")
 
 using Distributed
-addprocs(90)
+addprocs(80)
 
 @everywhere begin #INCLUDE MODEL CODE AND NECESSARY LIBRARIES
 
@@ -12,14 +12,16 @@ addprocs(90)
 
     total_gens = 2500
 
-    seeds = rand(Xoshiro(5735333478), 1:100000, 20)
+    seeds = rand(Xoshiro(5735333478), 1:100000, 25)
 
 	parameters = Dict( #ALTER THIS DICTIONARY TO DEFINE PARAMETER DISTRIBUTIONS
-    :N => 2000,
-    :n => [15, 30],
-    :m => [15, 30],
-    :T => [100],
-    :t => 15,
+    :N => 1000,
+    :n => 20,
+    :m => 20,
+    :T => 500,
+    :t => 10,
+    :μ => 0.0:0.05:1.0|>collect,
+    :λ => 0.0:0.05:1.0|>collect,
     :mu_std => 0.01,
     :mu_soc_h => 0.001,
     :mu_soc_v => 0.001,
@@ -29,11 +31,9 @@ addprocs(90)
     :mu_parochial => 0.01,
     :selection => true,
     :mixed => true,
-    :mixed_freq => [0.25, 0.5, 0.75],
-    :mixed_aleph1 => [0.95],
-    :mixed_aleph2 => 0.05:0.05:0.95|>collect,
-    :mixed_u1 => [0.75],
-    :mixed_u2 => [0.55, 0.6, 0.65, 0.75],
+    :mixed_freq => 0.5,
+    :mixed_aleph1 => 0.95,
+    :mixed_aleph2 => [0.05, 0.45, 0.85],
     :seed => seeds
 )
 

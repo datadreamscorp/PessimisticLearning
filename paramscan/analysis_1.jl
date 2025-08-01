@@ -1,10 +1,10 @@
 #############
-#ANALYSIS 1 - EVOLUTION OF LEARNING PORTFOLIOS
+#ANALYSIS 1 - FULL LEARNING OPTIONS IN STATIC ENVIRONMENTS
 using Pkg
 Pkg.activate("..")
 
 using Distributed
-addprocs(90)
+addprocs(80)
 
 @everywhere begin 
 
@@ -15,17 +15,13 @@ addprocs(90)
     seeds = rand(Xoshiro(17395646456), 1:100000, 25)
 
 	parameters = Dict( #ALTER THIS DICTIONARY TO DEFINE PARAMETER DISTRIBUTIONS
-    :N => 1000,
-    :n => [1, 5, 10, 15],
-    :m => [1, 5, 10, 15],
-    :T => [100],
-    :t => 15,
-    :u => [0.55, 0.6, 0.65, 0.75],
+    :N => 750,
+    :n => 10,
+    :m => 10,
+    :T => 500,
+    :t => 10,
+    :u => 0.55:0.01:0.95,
     :aleph => 0.05:0.05:0.95|>collect,
-    :envshift => [1, 3000],
-    :periodic => true,
-    :peg_aleph => true,
-    :u_shift => [0.65, 0.85],
     :mu_std => 0.01,
     :mu_soc_h => 0.001,
     :mu_soc_v => 0.001,
@@ -56,6 +52,18 @@ addprocs(90)
         :s_herror,
         :s_ltail,
         :s_htail,
+        :s_ub_mean,
+        :s_ub_median,
+        :s_ub_lerror, 
+        :s_ub_herror,
+        :s_ub_ltail,
+        :s_ub_htail,
+        :s_pb_mean,
+        :s_pb_median,
+        :s_pb_lerror, 
+        :s_pb_herror,
+        :s_pb_ltail,
+        :s_pb_htail,
         :s_end_mean,
         :s_end_median,
         :s_end_lerror, 

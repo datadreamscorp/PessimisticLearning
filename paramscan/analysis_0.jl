@@ -1,10 +1,10 @@
 #############
-#ANALYSIS 0 - EVOLUTION OF PEER INFLUENCE AND SENSITIVITY
+#ANALYSIS 0 - NO ELDER INFLUENCE
 using Pkg
 Pkg.activate("..")
 
 using Distributed
-addprocs(90)
+addprocs(80)
 
 @everywhere begin 
     
@@ -15,17 +15,18 @@ addprocs(90)
     seeds = rand(Xoshiro(465826433645), 1:100000, 25)
 
 	parameters = Dict( #ALTER THIS DICTIONARY TO DEFINE PARAMETER DISTRIBUTIONS
-    :N => 1000,
-    :n => [1, 5, 10, 15],
-    :T => [100],
-    :t => [2, 5, 10, 15],
-    :u => [0.55, 0.6, 0.65, 0.75],
+    :N => 750,
+    :n => 10,
+    :T => 500,
+    :t => 10,
+    :u => [0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
     :aleph => 0.05:0.05:0.95|>collect,
     :mu_std => 0.01,
     :mu_soc_h => 0.001,
     :mu_soc_v => 0.0,
     :mu_sens => 0.001,
     :mu_L => 0.0,
+    :strategies => ["UB"],
     :selection => true,
     :mixed => false,
     :seed => seeds
@@ -48,6 +49,8 @@ addprocs(90)
         :s_young_median,
         :s_young_lerror, 
         :s_young_herror,
+        :sbar,
+        :mean_increment,
         :concentration,
         :concentration_lerror,
         :concentration_herror

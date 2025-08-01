@@ -21,7 +21,7 @@ function probruin(u, ℵ, s; VB=1)
 	return clamp(p_ruin, 0.0, 1.0)
 end
 
-probruin_numeric(u, א, s; Vb=1, seasons=1000, n=10000) = 1 - ( (filter(x -> x != -Inf, [simulate_gambles_num(u, א, s, Vb=Vb, seasons=seasons) for i in 1:n]) |> length)/n )
+probruin_numeric(u, א, s; Vb=1, seasons=500, n=1000) = 1 - ( (filter(x -> x > 0, [simulate_gambles_num(u, א, s, Vb=Vb, seasons=seasons) for i in 1:n]) |> length)/n )
 
 s_star(u, ℵ) = (0.001:0.001:0.999|>collect)[findmax( (1 .- probruin.(u, ℵ, 0.001:0.001:0.999)) .* g.(0.001:0.001:0.999, l=u) )[2]]
 
@@ -79,7 +79,7 @@ function simulate_gambles_num(u, aleph, stake;
 
 	end
 
-	return log_capital - init_capital
+	return log_capital #- init_capital
 
 end
 
