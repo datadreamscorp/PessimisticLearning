@@ -1150,206 +1150,6 @@ md"""
 	
 end
 
-# ╔═╡ f81601e9-a528-4359-8306-7111d542807d
-begin
-	function plot_mixed(datseris)
-		
-		delta_mixed = 0.6
-		
-		center_plot = levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:soc_h_g0,
-					colrange=(0.0,1.0),
-					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-					colormap = cgrad(:YlOrRd),
-					mask=true,
-					delta=delta_mixed,
-					ylab=L"\mathrm{E.\ peer\ influence}",
-					ylabelfontsize=8,
-					xticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-				)
-		annotate!([1.4], [-0.5], text(L"\mathrm{aggregate\ uncertainty\ } (\lambda)", 15))
-	
-		mixedplot = plot(
-			plot(
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:paroch_g0,
-					ylab=L"\mathrm{A.\ parochialism}",
-					ylabelfontsize=8,
-					colrange=(0.0,1.0),
-					colormap = cgrad(:YlOrRd),
-					mask=true,
-					delta=delta_mixed,
-					xticks=false,
-					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-					title=L"\mathrm{advantaged\ group}"
-				),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:pb_g0,
-					colrange=(0.0,1.0),
-					colormap = cgrad(:YlOrRd),
-					mask=true,
-					delta=delta_mixed,
-					ylab=L"\mathrm{B.\ payoff\ bias}",
-					ylabelfontsize=8,
-					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-					xticks=false,
-				),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:sens_g0,
-					colrange=(0.0,1.0),
-					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-					colormap = cgrad(:YlOrRd),
-					mask=true,
-					delta=delta_mixed,
-					ylab=L"\mathrm{C.\ sensitivity}",
-					ylabelfontsize=8,
-					xticks=false,
-				),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:soc_v_g0,
-					colrange=(0.0,1.0),
-					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-					colormap = cgrad(:YlOrRd),
-					mask=true,
-					delta=delta_mixed,
-					ylab=L"\mathrm{D.\ elder\ influence}",
-					ylabelfontsize=8,
-					xticks=false,
-				),
-				center_plot,
-				size=(1000,300), layout=(5,1), bottom_margin=6Plots.mm,
-			),
-			plot(
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:paroch_g1,
-					title=L"\mathrm{disadvantaged\ group}",
-					ylabelfontsize=8,
-					colrange=(0.0,1.0),
-					colormap = cgrad(:YlGnBu),
-					mask=true,
-					delta=delta_mixed,
-					cbarticks=(
-						[1.4, 1.4, 1.4],
-						[0.01, 0.5, 0.99],
-						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
-					),
-					xticks=false,
-					yticks=false
-					),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:pb_g1,
-					colrange=(0.0,1.0),
-					yticks=false,
-					colormap = cgrad(:YlGnBu),
-					mask=true,
-					delta=delta_mixed,
-					cbarticks=(
-						[1.4, 1.4, 1.4],
-						[0.01, 0.5, 0.99],
-						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
-					),
-					xticks=false,
-				),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:sens_g1,
-					colrange=(0.0,1.0),
-					yticks=false,
-					colormap = cgrad(:YlGnBu),
-					mask=true,
-					delta=delta_mixed,
-					cbarticks=(
-						[1.4, 1.4, 1.4],
-						[0.01, 0.5, 0.99],
-						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
-					),
-					xticks=false,
-				),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:soc_v_g1,
-					colrange=(0.0,1.0),
-					yticks=false,
-					colormap = cgrad(:YlGnBu),
-					mask=true,
-					delta=delta_mixed,
-					cbarticks=(
-						[1.4, 1.4, 1.4],
-						[0.01, 0.5, 0.99],
-						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
-					),
-					xticks=false,
-				),
-				levelplot(
-					datseris,
-					:λ,
-					:μ,
-					:soc_h_g1,
-					colrange=(0.0,1.0),
-					yticks=false,
-					colormap = cgrad(:YlGnBu),
-					mask=true,
-					delta=delta_mixed,
-					cbarticks=(
-						[1.4, 1.4, 1.4],
-						[0.01, 0.5, 0.99],
-						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
-					),
-					xticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
-				),
-				size=(1000,300), bottom_margin=6Plots.mm, layout=(5,1)
-			),
-			layout=(1,2), size=(500,700), #left_margins=7Plots.mm
-		)
-	
-		spacer2 = plot(
-			1:0,
-			xlim = (0.9, 1), ylim = (0, 1),
-			axis = false, framestyle = :none, grid = false,
-			legend = false, ticks = false
-		)
-		annotate!([0.9], [0.5], [text(L"\mathrm{idiosyncratic\ uncertainty\ } (\mu)", rotation=90)])
-		
-		mixedplot = plot(
-			spacer2,
-			mixedplot,
-			layout = @layout([a{0.025w} b{0.9975w}]),
-		)
-	
-	end
-
-	mixedplot = plot_mixed(datseris)
-
-	savefig(mixedplot, "../images/fig7_mixed.pdf")
-
-	mixedplot
-end
-
 # ╔═╡ 59959294-880a-470e-b4c2-b2579a1c55fe
 begin
 	tticks = 2500
@@ -1585,127 +1385,6 @@ begin
 	md"""
 	#### Figure 8 - Tails of risk taking
 	"""
-end
-
-# ╔═╡ d9ed7f3b-1324-4468-aecd-1b6756e6f415
-begin
-	modelio7 = initialize_pessimistic_learning(
-		N = 750,
-		T = 500,
-		m = 10,
-		n = 10,
-		t = 10,
-		u = 0.75,
-		aleph = 0.05,
-		#EVOLUTION PARAMETERS
-		mu_std = 0.01,
-		mu_soc_h = 0.001,
-		mu_soc_v = 0.001,
-		mu_sens = 0.001,
-		mu_L = 0.01,
-		mu_parochial = 0.0,
-		strategies = "UB&PB",
-		total_ticks = tticks,
-		seed = 7554889,
-	)
-
-	adata7, mdata7 = run!(
-		modelio7, 
-		tticks,
-		adata=[:s, :soc_h, :soc_v, :sens, :L],
-		mdata=[
-			:Vbar, 
-			:s_median, :s_lerror, :s_herror, :s_ltail, :s_htail,
-			:s_young_median, :s_child_median, 
-			:soc_v_median, :soc_v_lerror, :soc_v_herror, 
-			:soc_h_median, :soc_h_lerror, :soc_h_herror,
-			:sens_median, :sens_lerror, :sens_herror,
-			:sbar, :mean_increment, :soc_v_median_g0, :soc_h_median_g0, 
-			:sens_median_g0, :soc_v_median_g1, :soc_h_median_g1, :sens_median_g1,
-			:freq_ub, :freq_pb, :freq_cb, :freq_cb_g0, :freq_cb_g1,
-			:freq_ub_g0, :freq_ub_g1, :freq_pb_g0, :freq_pb_g1, :freq_parochial_g0, :freq_parochial_g1
-		]
-	)
-
-	modelio8 = initialize_pessimistic_learning(
-		N = 750,
-		T = 500,
-		m = 10,
-		n = 10,
-		t = 10,
-		u = 0.75,
-		aleph = 0.5,
-		#EVOLUTION PARAMETERS
-		mu_std = 0.01,
-		mu_soc_h = 0.001,
-		mu_soc_v = 0.001,
-		mu_sens = 0.001,
-		mu_L = 0.01,
-		mu_parochial = 0.0,
-		strategies = "UB&PB",
-		total_ticks = tticks,
-		seed = 1274245656,
-	)
-
-	adata8, mdata8 = run!(
-		modelio8, 
-		tticks,
-		adata=[:s, :soc_h, :soc_v, :sens, :L],
-		mdata=[
-			:Vbar, 
-			:s_median, :s_lerror, :s_herror, :s_ltail, :s_htail,
-			:s_young_median, :s_child_median, 
-			:soc_v_median, :soc_v_lerror, :soc_v_herror, 
-			:soc_h_median, :soc_h_lerror, :soc_h_herror,
-			:sens_median, :sens_lerror, :sens_herror,
-			:sbar, :mean_increment, :soc_v_median_g0, :soc_h_median_g0, 
-			:sens_median_g0, :soc_v_median_g1, :soc_h_median_g1, :sens_median_g1,
-			:freq_ub, :freq_pb, :freq_cb, :freq_cb_g0, :freq_cb_g1,
-			:freq_ub_g0, :freq_ub_g1, :freq_pb_g0, :freq_pb_g1, :freq_parochial_g0, :freq_parochial_g1
-		]
-	)
-	
-	modelio9 = initialize_pessimistic_learning(
-		N = 750,
-		T = 500,
-		m = 10,
-		n = 10,
-		t = 10,
-		u = 0.75,
-		aleph = 0.95,
-		#EVOLUTION PARAMETERS
-		mu_std = 0.01,
-		mu_soc_h = 0.001,
-		mu_soc_v = 0.001,
-		mu_sens = 0.001,
-		mu_L = 0.01,
-		mu_parochial = 0.0,
-		strategies = "UB&PB",
-		total_ticks = tticks,
-		seed = 923445654,
-	)
-
-	adata9, mdata9 = run!(
-		modelio9, 
-		tticks,
-		adata=[:s, :soc_h, :soc_v, :sens, :L],
-		mdata=[
-			:Vbar, 
-			:s_median, :s_lerror, :s_herror, :s_ltail, :s_htail,
-			:s_young_median, :s_child_median, 
-			:soc_v_median, :soc_v_lerror, :soc_v_herror, 
-			:soc_h_median, :soc_h_lerror, :soc_h_herror,
-			:sens_median, :sens_lerror, :sens_herror,
-			:sbar, :mean_increment, :soc_v_median_g0, :soc_h_median_g0, 
-			:sens_median_g0, :soc_v_median_g1, :soc_h_median_g1, :sens_median_g1,
-			:freq_ub, :freq_pb, :freq_cb, :freq_cb_g0, :freq_cb_g1,
-			:freq_ub_g0, :freq_ub_g1, :freq_pb_g0, :freq_pb_g1, :freq_parochial_g0, :freq_parochial_g1
-		]
-	)
-
-md"""
-#### Figure 4 - Population effects of elder influence
-"""
 end
 
 # ╔═╡ 3ab29f6f-c949-43cf-a254-00d505a5313f
@@ -6133,6 +5812,551 @@ begin
 end
   ╠═╡ =#
 
+# ╔═╡ f4ee25e4-626e-4d72-b4b5-dd1f9f389f8c
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	function plot_opt_peers(
+		dat,
+		aleph; 
+		ylim = (0.0, 1.05), 
+		xlab = L"\mathrm{risk-free\ period\ length\ } (\tau)",
+		ylab = true,
+		title = true,
+		legend = true
+		)
+		
+		dat1 = dat[
+			dat.time .== 2500 .&&
+			#dat.N .== 1000 .&& 
+			dat.T .== 100 .&&
+			dat.aleph .== aleph
+			,:]
+	
+		dat1_l2 = dat1[dat1.u .== 0.55, :]
+		dat1_l3 = dat1[dat1.u .== 0.6, :]
+		dat1_l6 = dat1[dat1.u .== 0.65, :]
+
+		mdatl2_0 = dat1_l2[(dat1_l2.n .== 1), :]
+		mdatl2_1 = dat1_l2[(dat1_l2.n .== 5), :]
+		mdatl2_2 = dat1_l2[(dat1_l2.n .== 10), :]
+		mdatl2_3 = dat1_l2[(dat1_l2.n .== 15), :]
+
+		grouped_vbar0 = combine(
+			groupby(mdatl2_0, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar1 = combine(
+			groupby(mdatl2_1, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar2 = combine(
+			groupby(mdatl2_2, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar3 = combine(
+			groupby(mdatl2_3, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+
+		mdatl3_0 = dat1_l3[(dat1_l3.n .== 1), :]
+		mdatl3_1 = dat1_l3[(dat1_l3.n .== 5), :]
+		mdatl3_2 = dat1_l3[(dat1_l3.n .== 10), :]
+		mdatl3_3 = dat1_l3[(dat1_l3.n .== 15), :]
+
+		grouped_vbar02 = combine(
+			groupby(mdatl3_0, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar4 = combine(
+			groupby(mdatl3_1, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar5 = combine(
+			groupby(mdatl3_2, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar6 = combine(
+			groupby(mdatl3_3, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+
+		mdatl6_0 = dat1_l6[(dat1_l6.n .== 1), :]
+		mdatl6_1 = dat1_l6[(dat1_l6.n .== 5), :]
+		mdatl6_2 = dat1_l6[(dat1_l6.n .== 10), :]
+		mdatl6_3 = dat1_l6[(dat1_l6.n .== 15), :]
+
+		grouped_vbar03 = combine(
+			groupby(mdatl6_0, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar7 = combine(
+			groupby(mdatl6_1, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar8 = combine(
+			groupby(mdatl6_2, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		grouped_vbar9 = combine(
+			groupby(mdatl6_3, :t), 
+			:Vbar => mean => :mean_Vbar,
+		)
+		
+		tauplot1 = plot(
+		    grouped_vbar1.t, grouped_vbar0.mean_Vbar, 
+			xlabelfontsize = 15,
+			palette=cgrad(:matter, 5, categorical = true)[2:end],
+			ylabel = ylab ? L"\bar{V} \left.\right|_{\aleph = %$(aleph)}" : "",
+			ylabelfontsize = 15,
+			legend = false,
+			legendtitle = L"n",
+		    label = L"5",
+			lw = 2,
+			grid = false,
+			title = title ? L"\epsilon = 0.05" : "",
+			xticks = ([5, 10, 15], [L"5", L"10", L"15"]),
+			yticks = ([0.0, 0.25, 0.5, 0.75, 1.0], [L"0.0", L"0.25", L"0.5", L"0.75", L"1.0"]),
+			ylim = ylim
+			)
+		plot!(
+		    grouped_vbar2.t, grouped_vbar1.mean_Vbar, 
+		    fillalpha=0.2, label = L"10", lw=2,
+		)
+		plot!(
+		    grouped_vbar3.t, grouped_vbar2.mean_Vbar,
+		    fillalpha=0.2, label = L"15", lw=2,
+		)
+		plot!(
+		    grouped_vbar0.t, grouped_vbar3.mean_Vbar,
+		    fillalpha=0.2, label = L"1", lw=2,
+		)
+	
+		tauplot2 = plot(
+		    grouped_vbar4.t, grouped_vbar02.mean_Vbar, 
+			xlabel = xlab,
+			xlabelfontsize = 15,
+			palette=cgrad(:matter, 5, categorical = true)[2:end],
+			ylabelfontsize = 15,
+			legend = false,
+			legendtitle = L"n",
+		    label = L"5",
+			lw = 2,
+			grid = false,
+			title = title ? L"\epsilon = 0.10" : "",
+			xticks = ([5, 10, 15], [L"5", L"10", L"15"]),
+			yticks = false,
+			ylim = ylim
+			)
+		plot!(
+		    grouped_vbar5.t, grouped_vbar4.mean_Vbar, 
+		    fillalpha=0.2, label = L"10", lw=2,
+		)
+		plot!(
+		    grouped_vbar6.t, grouped_vbar5.mean_Vbar,
+		    fillalpha=0.2, label = L"15", lw=2,
+		)
+		plot!(
+		    grouped_vbar02.t, grouped_vbar6.mean_Vbar,
+		    fillalpha=0.2, label = L"1", lw=2,
+		)
+	
+		tauplot3 = plot(
+		    grouped_vbar7.t, grouped_vbar03.mean_Vbar, 
+			xlabelfontsize = 15,
+			palette=cgrad(:matter, 5, categorical = true)[2:end],
+			ylabelfontsize = 15,
+			legend = legend,
+			legendtitle = L"n",
+		    label = L"1",
+			lw = 2,
+			grid=false,
+			title = title ? L"\epsilon = 0.15" : "",
+			xticks = ([5, 10, 15], [L"5", L"10", L"15"]),
+			yticks = false,
+			ylim = ylim
+			)
+		plot!(
+		    grouped_vbar8.t, grouped_vbar7.mean_Vbar, 
+		    fillalpha=0.2, label = L"5", lw=2,
+		)
+		plot!(
+		    grouped_vbar9.t, grouped_vbar8.mean_Vbar,
+		    fillalpha=0.2, label = L"10", lw=2,
+		)
+		plot!(
+		    grouped_vbar03.t, grouped_vbar9.mean_Vbar,
+		    fillalpha=0.2, label = L"15", lw=2,
+		)
+	
+		return plot(
+			tauplot1, tauplot2, tauplot3,
+			layout = (1,3)
+		)
+		
+	end
+	
+	plot(
+		plot_opt_peers(dat, 0.05, xlab="", legend=false),
+		plot_opt_peers(dat, 0.5, title=false, xlab="", legend=false),
+		plot_opt_peers(dat, 0.95, title=false, legend=:bottomright),
+		layout=(3,1), size=(600, 600), bottom_margin=0Plots.mm
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ ebf1dade-ce5e-42dd-a687-1bb8791eb7ab
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	plot(
+		mdata7.time[2:end],
+		mdata7.soc_v_median_g0[2:end],
+		label=L"\alpha",
+		lw=2,
+		color="black",
+		ylim=(0.0, 1.0),
+		xlabel=L"t",
+		xlabelfontsize=20,
+		#legend=false,
+		grid=false,
+		xticks=false,
+		yticks=([0.0, 0.5, 1.0], [L"0", L"0.5", L"1"]),
+		ytickfontsize=10
+	)
+	plot!(
+		mdata7.time[2:end],
+		mdata7.sens_median_g0[2:end],
+		label=L"\delta",
+		color="black",
+		alpha=0.25,
+		lw=2,
+	)
+	plot!(
+		mdata7.time[2:end],
+		mdata7.soc_v_median_g1[2:end],
+		label="",
+		color="black",
+		lw=2,
+		ls=:dot,
+	)
+	plot!(
+		mdata7.time[2:end],
+		mdata7.sens_median_g1[2:end],
+		label="",
+		color="black",
+		alpha=0.25,
+		lw=2,
+		ls=:dot,
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ c8795305-655c-47bd-a385-e711f0ecc41d
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	plot(
+		mdata7.time[2:end],
+		mdata7.freq_pb_g0[2:end],
+		label=L"\mathrm{PB}",
+		lw=2,
+		color="black",
+		ylim=(0.0, 1.0),
+		xlabel=L"t",
+		xlabelfontsize=20,
+		grid=false
+		)
+	plot!(
+		mdata7.time[2:end],
+		mdata7.freq_pb_g1[2:end],
+		label="",
+		color="black",
+		lw=2,
+		ls=:dot,
+	)
+	plot!(
+		mdata7.time[2:end],
+		mdata7.soc_h_median_g0[2:end],
+		label=L"\beta",
+		color="black",
+		lw=2,
+		alpha=0.75
+	)
+	plot!(
+		mdata7.time[2:end],
+		mdata7.soc_h_median_g1[2:end],
+		label="",
+		color="black",
+		lw=2,
+		ls=:dot,
+		alpha=0.75
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ dd70f9c5-1d26-4a0c-bcfa-106300110cbb
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	plot(
+		mdata7.time[2:end],
+		mdata7.freq_parochial_g0[2:end],
+		label=L"\mathrm{Parochialism}",
+		lw=2,
+		color="black",
+		ylim=(0.0, 1.0),
+		xlabel=L"t",
+		xlabelfontsize=20,
+		grid=false
+	)
+	plot!(
+		mdata7.time[2:end],
+	 	mdata7.freq_parochial_g1[2:end],
+		label="",
+	 	color="black",
+	 	lw=2,
+		ls=:dot,
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ 896ff8a7-0f61-4be3-adf4-d8e55ad16874
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	env_plot = plot( 
+		plot_powerdist.(
+		[1.0, 1.5, 2.0, 3.0, 4.0, 5.0], n=1000)..., 
+		layout=(2,3), 
+		link=:all,
+		margins=5Plots.mm
+		#plot_title="power-distributed success rates (u)",
+	)
+
+	varplot = plot(
+		[l/(l+1) for l in 1:0.01:100],
+		[( (l/(l+1))*(1 - (l/(l+1))) )/( l + 2 ) for l in 1:0.01:100],
+		c="black",
+		ylab="Var "*L"(U)",
+		xlab=L"\mathbb{E}(U)",
+		legend=false,
+		lw=2,
+		dpi=300
+	)
+	
+	savefig(env_plot, "../images/fig1_env.pdf")
+	
+	plot(
+		env_plot,
+		varplot,
+		size=(900, 400)
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ f81601e9-a528-4359-8306-7111d542807d
+#=╠═╡
+begin
+	function plot_mixed(datseris)
+		
+		delta_mixed = 0.6
+		
+		center_plot = levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:soc_h_g0,
+					colrange=(0.0,1.0),
+					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+					colormap = cgrad(:YlOrRd),
+					mask=true,
+					delta=delta_mixed,
+					ylab=L"\mathrm{E.\ peer\ influence}",
+					ylabelfontsize=8,
+					xticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+				)
+		annotate!([1.4], [-0.5], text(L"\mathrm{aggregate\ uncertainty\ } (\lambda)", 15))
+	
+		mixedplot = plot(
+			plot(
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:paroch_g0,
+					ylab=L"\mathrm{A.\ parochialism}",
+					ylabelfontsize=8,
+					colrange=(0.0,1.0),
+					colormap = cgrad(:YlOrRd),
+					mask=true,
+					delta=delta_mixed,
+					xticks=false,
+					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+					title=L"\mathrm{advantaged\ group}"
+				),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:pb_g0,
+					colrange=(0.0,1.0),
+					colormap = cgrad(:YlOrRd),
+					mask=true,
+					delta=delta_mixed,
+					ylab=L"\mathrm{B.\ payoff\ bias}",
+					ylabelfontsize=8,
+					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+					xticks=false,
+				),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:sens_g0,
+					colrange=(0.0,1.0),
+					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+					colormap = cgrad(:YlOrRd),
+					mask=true,
+					delta=delta_mixed,
+					ylab=L"\mathrm{C.\ sensitivity}",
+					ylabelfontsize=8,
+					xticks=false,
+				),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:soc_v_g0,
+					colrange=(0.0,1.0),
+					yticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+					colormap = cgrad(:YlOrRd),
+					mask=true,
+					delta=delta_mixed,
+					ylab=L"\mathrm{D.\ elder\ influence}",
+					ylabelfontsize=8,
+					xticks=false,
+				),
+				center_plot,
+				size=(1000,300), layout=(5,1), bottom_margin=6Plots.mm,
+			),
+			plot(
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:paroch_g1,
+					title=L"\mathrm{disadvantaged\ group}",
+					ylabelfontsize=8,
+					colrange=(0.0,1.0),
+					colormap = cgrad(:YlGnBu),
+					mask=true,
+					delta=delta_mixed,
+					cbarticks=(
+						[1.4, 1.4, 1.4],
+						[0.01, 0.5, 0.99],
+						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
+					),
+					xticks=false,
+					yticks=false
+					),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:pb_g1,
+					colrange=(0.0,1.0),
+					yticks=false,
+					colormap = cgrad(:YlGnBu),
+					mask=true,
+					delta=delta_mixed,
+					cbarticks=(
+						[1.4, 1.4, 1.4],
+						[0.01, 0.5, 0.99],
+						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
+					),
+					xticks=false,
+				),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:sens_g1,
+					colrange=(0.0,1.0),
+					yticks=false,
+					colormap = cgrad(:YlGnBu),
+					mask=true,
+					delta=delta_mixed,
+					cbarticks=(
+						[1.4, 1.4, 1.4],
+						[0.01, 0.5, 0.99],
+						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
+					),
+					xticks=false,
+				),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:soc_v_g1,
+					colrange=(0.0,1.0),
+					yticks=false,
+					colormap = cgrad(:YlGnBu),
+					mask=true,
+					delta=delta_mixed,
+					cbarticks=(
+						[1.4, 1.4, 1.4],
+						[0.01, 0.5, 0.99],
+						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
+					),
+					xticks=false,
+				),
+				levelplot(
+					datseris,
+					:λ,
+					:μ,
+					:soc_h_g1,
+					colrange=(0.0,1.0),
+					yticks=false,
+					colormap = cgrad(:YlGnBu),
+					mask=true,
+					delta=delta_mixed,
+					cbarticks=(
+						[1.4, 1.4, 1.4],
+						[0.01, 0.5, 0.99],
+						[text(L"0.0", 8), text(L"0.5", 8), text(L"1.0", 8)]
+					),
+					xticks=(0.0:0.25:1.0, [L"%$a" for a in 0.0:0.25:1.0]),
+				),
+				size=(1000,300), bottom_margin=6Plots.mm, layout=(5,1)
+			),
+			layout=(1,2), size=(500,700), #left_margins=7Plots.mm
+		)
+	
+		spacer2 = plot(
+			1:0,
+			xlim = (0.9, 1), ylim = (0, 1),
+			axis = false, framestyle = :none, grid = false,
+			legend = false, ticks = false
+		)
+		annotate!([0.9], [0.5], [text(L"\mathrm{idiosyncratic\ uncertainty\ } (\mu)", rotation=90)])
+		
+		mixedplot = plot(
+			spacer2,
+			mixedplot,
+			layout = @layout([a{0.025w} b{0.9975w}]),
+		)
+	
+	end
+
+	mixedplot = plot_mixed(datseris)
+
+	savefig(mixedplot, "../images/fig7_mixed.pdf")
+
+	mixedplot
+end
+  ╠═╡ =#
+
 # ╔═╡ 55c3f3f2-2e71-4fe3-b7a0-cdd9b0422816
 # ╠═╡ disabled = true
 #=╠═╡
@@ -6408,199 +6632,6 @@ begin
 end
   ╠═╡ =#
 
-# ╔═╡ f4ee25e4-626e-4d72-b4b5-dd1f9f389f8c
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	function plot_opt_peers(
-		dat,
-		aleph; 
-		ylim = (0.0, 1.05), 
-		xlab = L"\mathrm{risk-free\ period\ length\ } (\tau)",
-		ylab = true,
-		title = true,
-		legend = true
-		)
-		
-		dat1 = dat[
-			dat.time .== 2500 .&&
-			#dat.N .== 1000 .&& 
-			dat.T .== 100 .&&
-			dat.aleph .== aleph
-			,:]
-	
-		dat1_l2 = dat1[dat1.u .== 0.55, :]
-		dat1_l3 = dat1[dat1.u .== 0.6, :]
-		dat1_l6 = dat1[dat1.u .== 0.65, :]
-
-		mdatl2_0 = dat1_l2[(dat1_l2.n .== 1), :]
-		mdatl2_1 = dat1_l2[(dat1_l2.n .== 5), :]
-		mdatl2_2 = dat1_l2[(dat1_l2.n .== 10), :]
-		mdatl2_3 = dat1_l2[(dat1_l2.n .== 15), :]
-
-		grouped_vbar0 = combine(
-			groupby(mdatl2_0, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar1 = combine(
-			groupby(mdatl2_1, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar2 = combine(
-			groupby(mdatl2_2, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar3 = combine(
-			groupby(mdatl2_3, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-
-		mdatl3_0 = dat1_l3[(dat1_l3.n .== 1), :]
-		mdatl3_1 = dat1_l3[(dat1_l3.n .== 5), :]
-		mdatl3_2 = dat1_l3[(dat1_l3.n .== 10), :]
-		mdatl3_3 = dat1_l3[(dat1_l3.n .== 15), :]
-
-		grouped_vbar02 = combine(
-			groupby(mdatl3_0, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar4 = combine(
-			groupby(mdatl3_1, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar5 = combine(
-			groupby(mdatl3_2, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar6 = combine(
-			groupby(mdatl3_3, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-
-		mdatl6_0 = dat1_l6[(dat1_l6.n .== 1), :]
-		mdatl6_1 = dat1_l6[(dat1_l6.n .== 5), :]
-		mdatl6_2 = dat1_l6[(dat1_l6.n .== 10), :]
-		mdatl6_3 = dat1_l6[(dat1_l6.n .== 15), :]
-
-		grouped_vbar03 = combine(
-			groupby(mdatl6_0, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar7 = combine(
-			groupby(mdatl6_1, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar8 = combine(
-			groupby(mdatl6_2, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		grouped_vbar9 = combine(
-			groupby(mdatl6_3, :t), 
-			:Vbar => mean => :mean_Vbar,
-		)
-		
-		tauplot1 = plot(
-		    grouped_vbar1.t, grouped_vbar0.mean_Vbar, 
-			xlabelfontsize = 15,
-			palette=cgrad(:matter, 5, categorical = true)[2:end],
-			ylabel = ylab ? L"\bar{V} \left.\right|_{\aleph = %$(aleph)}" : "",
-			ylabelfontsize = 15,
-			legend = false,
-			legendtitle = L"n",
-		    label = L"5",
-			lw = 2,
-			grid = false,
-			title = title ? L"\epsilon = 0.05" : "",
-			xticks = ([5, 10, 15], [L"5", L"10", L"15"]),
-			yticks = ([0.0, 0.25, 0.5, 0.75, 1.0], [L"0.0", L"0.25", L"0.5", L"0.75", L"1.0"]),
-			ylim = ylim
-			)
-		plot!(
-		    grouped_vbar2.t, grouped_vbar1.mean_Vbar, 
-		    fillalpha=0.2, label = L"10", lw=2,
-		)
-		plot!(
-		    grouped_vbar3.t, grouped_vbar2.mean_Vbar,
-		    fillalpha=0.2, label = L"15", lw=2,
-		)
-		plot!(
-		    grouped_vbar0.t, grouped_vbar3.mean_Vbar,
-		    fillalpha=0.2, label = L"1", lw=2,
-		)
-	
-		tauplot2 = plot(
-		    grouped_vbar4.t, grouped_vbar02.mean_Vbar, 
-			xlabel = xlab,
-			xlabelfontsize = 15,
-			palette=cgrad(:matter, 5, categorical = true)[2:end],
-			ylabelfontsize = 15,
-			legend = false,
-			legendtitle = L"n",
-		    label = L"5",
-			lw = 2,
-			grid = false,
-			title = title ? L"\epsilon = 0.10" : "",
-			xticks = ([5, 10, 15], [L"5", L"10", L"15"]),
-			yticks = false,
-			ylim = ylim
-			)
-		plot!(
-		    grouped_vbar5.t, grouped_vbar4.mean_Vbar, 
-		    fillalpha=0.2, label = L"10", lw=2,
-		)
-		plot!(
-		    grouped_vbar6.t, grouped_vbar5.mean_Vbar,
-		    fillalpha=0.2, label = L"15", lw=2,
-		)
-		plot!(
-		    grouped_vbar02.t, grouped_vbar6.mean_Vbar,
-		    fillalpha=0.2, label = L"1", lw=2,
-		)
-	
-		tauplot3 = plot(
-		    grouped_vbar7.t, grouped_vbar03.mean_Vbar, 
-			xlabelfontsize = 15,
-			palette=cgrad(:matter, 5, categorical = true)[2:end],
-			ylabelfontsize = 15,
-			legend = legend,
-			legendtitle = L"n",
-		    label = L"1",
-			lw = 2,
-			grid=false,
-			title = title ? L"\epsilon = 0.15" : "",
-			xticks = ([5, 10, 15], [L"5", L"10", L"15"]),
-			yticks = false,
-			ylim = ylim
-			)
-		plot!(
-		    grouped_vbar8.t, grouped_vbar7.mean_Vbar, 
-		    fillalpha=0.2, label = L"5", lw=2,
-		)
-		plot!(
-		    grouped_vbar9.t, grouped_vbar8.mean_Vbar,
-		    fillalpha=0.2, label = L"10", lw=2,
-		)
-		plot!(
-		    grouped_vbar03.t, grouped_vbar9.mean_Vbar,
-		    fillalpha=0.2, label = L"15", lw=2,
-		)
-	
-		return plot(
-			tauplot1, tauplot2, tauplot3,
-			layout = (1,3)
-		)
-		
-	end
-	
-	plot(
-		plot_opt_peers(dat, 0.05, xlab="", legend=false),
-		plot_opt_peers(dat, 0.5, title=false, xlab="", legend=false),
-		plot_opt_peers(dat, 0.95, title=false, legend=:bottomright),
-		layout=(3,1), size=(600, 600), bottom_margin=0Plots.mm
-	)
-end
-  ╠═╡ =#
-
 # ╔═╡ b9d9f726-e94e-4a95-815b-06a77e3c605b
 # ╠═╡ disabled = true
 #=╠═╡
@@ -6662,153 +6693,126 @@ begin
 end
   ╠═╡ =#
 
-# ╔═╡ ebf1dade-ce5e-42dd-a687-1bb8791eb7ab
-# ╠═╡ disabled = true
+# ╔═╡ d9ed7f3b-1324-4468-aecd-1b6756e6f415
 #=╠═╡
 begin
-	plot(
-		mdata7.time[2:end],
-		mdata7.soc_v_median_g0[2:end],
-		label=L"\alpha",
-		lw=2,
-		color="black",
-		ylim=(0.0, 1.0),
-		xlabel=L"t",
-		xlabelfontsize=20,
-		#legend=false,
-		grid=false,
-		xticks=false,
-		yticks=([0.0, 0.5, 1.0], [L"0", L"0.5", L"1"]),
-		ytickfontsize=10
-	)
-	plot!(
-		mdata7.time[2:end],
-		mdata7.sens_median_g0[2:end],
-		label=L"\delta",
-		color="black",
-		alpha=0.25,
-		lw=2,
-	)
-	plot!(
-		mdata7.time[2:end],
-		mdata7.soc_v_median_g1[2:end],
-		label="",
-		color="black",
-		lw=2,
-		ls=:dot,
-	)
-	plot!(
-		mdata7.time[2:end],
-		mdata7.sens_median_g1[2:end],
-		label="",
-		color="black",
-		alpha=0.25,
-		lw=2,
-		ls=:dot,
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ c8795305-655c-47bd-a385-e711f0ecc41d
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	plot(
-		mdata7.time[2:end],
-		mdata7.freq_pb_g0[2:end],
-		label=L"\mathrm{PB}",
-		lw=2,
-		color="black",
-		ylim=(0.0, 1.0),
-		xlabel=L"t",
-		xlabelfontsize=20,
-		grid=false
-		)
-	plot!(
-		mdata7.time[2:end],
-		mdata7.freq_pb_g1[2:end],
-		label="",
-		color="black",
-		lw=2,
-		ls=:dot,
-	)
-	plot!(
-		mdata7.time[2:end],
-		mdata7.soc_h_median_g0[2:end],
-		label=L"\beta",
-		color="black",
-		lw=2,
-		alpha=0.75
-	)
-	plot!(
-		mdata7.time[2:end],
-		mdata7.soc_h_median_g1[2:end],
-		label="",
-		color="black",
-		lw=2,
-		ls=:dot,
-		alpha=0.75
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ dd70f9c5-1d26-4a0c-bcfa-106300110cbb
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	plot(
-		mdata7.time[2:end],
-		mdata7.freq_parochial_g0[2:end],
-		label=L"\mathrm{Parochialism}",
-		lw=2,
-		color="black",
-		ylim=(0.0, 1.0),
-		xlabel=L"t",
-		xlabelfontsize=20,
-		grid=false
-	)
-	plot!(
-		mdata7.time[2:end],
-	 	mdata7.freq_parochial_g1[2:end],
-		label="",
-	 	color="black",
-	 	lw=2,
-		ls=:dot,
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ 896ff8a7-0f61-4be3-adf4-d8e55ad16874
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	env_plot = plot( 
-		plot_powerdist.(
-		[1.0, 1.5, 2.0, 3.0, 4.0, 5.0], n=1000)..., 
-		layout=(2,3), 
-		link=:all,
-		margins=5Plots.mm
-		#plot_title="power-distributed success rates (u)",
+	modelio7 = initialize_pessimistic_learning(
+		N = 750,
+		T = 500,
+		m = 10,
+		n = 10,
+		t = 10,
+		u = 0.75,
+		aleph = 0.05,
+		#EVOLUTION PARAMETERS
+		mu_std = 0.01,
+		mu_soc_h = 0.001,
+		mu_soc_v = 0.001,
+		mu_sens = 0.001,
+		mu_L = 0.01,
+		mu_parochial = 0.0,
+		strategies = "UB&PB",
+		total_ticks = tticks,
+		seed = 7554889,
 	)
 
-	varplot = plot(
-		[l/(l+1) for l in 1:0.01:100],
-		[( (l/(l+1))*(1 - (l/(l+1))) )/( l + 2 ) for l in 1:0.01:100],
-		c="black",
-		ylab="Var "*L"(U)",
-		xlab=L"\mathbb{E}(U)",
-		legend=false,
-		lw=2,
-		dpi=300
+	adata7, mdata7 = run!(
+		modelio7, 
+		tticks,
+		adata=[:s, :soc_h, :soc_v, :sens, :L],
+		mdata=[
+			:Vbar, 
+			:s_median, :s_lerror, :s_herror, :s_ltail, :s_htail,
+			:s_young_median, :s_child_median, 
+			:soc_v_median, :soc_v_lerror, :soc_v_herror, 
+			:soc_h_median, :soc_h_lerror, :soc_h_herror,
+			:sens_median, :sens_lerror, :sens_herror,
+			:sbar, :mean_increment, :soc_v_median_g0, :soc_h_median_g0, 
+			:sens_median_g0, :soc_v_median_g1, :soc_h_median_g1, :sens_median_g1,
+			:freq_ub, :freq_pb, :freq_cb, :freq_cb_g0, :freq_cb_g1,
+			:freq_ub_g0, :freq_ub_g1, :freq_pb_g0, :freq_pb_g1, :freq_parochial_g0, :freq_parochial_g1
+		]
+	)
+
+	modelio8 = initialize_pessimistic_learning(
+		N = 750,
+		T = 500,
+		m = 10,
+		n = 10,
+		t = 10,
+		u = 0.75,
+		aleph = 0.5,
+		#EVOLUTION PARAMETERS
+		mu_std = 0.01,
+		mu_soc_h = 0.001,
+		mu_soc_v = 0.001,
+		mu_sens = 0.001,
+		mu_L = 0.01,
+		mu_parochial = 0.0,
+		strategies = "UB&PB",
+		total_ticks = tticks,
+		seed = 1274245656,
+	)
+
+	adata8, mdata8 = run!(
+		modelio8, 
+		tticks,
+		adata=[:s, :soc_h, :soc_v, :sens, :L],
+		mdata=[
+			:Vbar, 
+			:s_median, :s_lerror, :s_herror, :s_ltail, :s_htail,
+			:s_young_median, :s_child_median, 
+			:soc_v_median, :soc_v_lerror, :soc_v_herror, 
+			:soc_h_median, :soc_h_lerror, :soc_h_herror,
+			:sens_median, :sens_lerror, :sens_herror,
+			:sbar, :mean_increment, :soc_v_median_g0, :soc_h_median_g0, 
+			:sens_median_g0, :soc_v_median_g1, :soc_h_median_g1, :sens_median_g1,
+			:freq_ub, :freq_pb, :freq_cb, :freq_cb_g0, :freq_cb_g1,
+			:freq_ub_g0, :freq_ub_g1, :freq_pb_g0, :freq_pb_g1, :freq_parochial_g0, :freq_parochial_g1
+		]
 	)
 	
-	savefig(env_plot, "../images/fig1_env.pdf")
-	
-	plot(
-		env_plot,
-		varplot,
-		size=(900, 400)
+	modelio9 = initialize_pessimistic_learning(
+		N = 750,
+		T = 500,
+		m = 10,
+		n = 10,
+		t = 10,
+		u = 0.75,
+		aleph = 0.95,
+		#EVOLUTION PARAMETERS
+		mu_std = 0.01,
+		mu_soc_h = 0.001,
+		mu_soc_v = 0.001,
+		mu_sens = 0.001,
+		mu_L = 0.01,
+		mu_parochial = 0.0,
+		strategies = "UB&PB",
+		total_ticks = tticks,
+		seed = 923445654,
 	)
+
+	adata9, mdata9 = run!(
+		modelio9, 
+		tticks,
+		adata=[:s, :soc_h, :soc_v, :sens, :L],
+		mdata=[
+			:Vbar, 
+			:s_median, :s_lerror, :s_herror, :s_ltail, :s_htail,
+			:s_young_median, :s_child_median, 
+			:soc_v_median, :soc_v_lerror, :soc_v_herror, 
+			:soc_h_median, :soc_h_lerror, :soc_h_herror,
+			:sens_median, :sens_lerror, :sens_herror,
+			:sbar, :mean_increment, :soc_v_median_g0, :soc_h_median_g0, 
+			:sens_median_g0, :soc_v_median_g1, :soc_h_median_g1, :sens_median_g1,
+			:freq_ub, :freq_pb, :freq_cb, :freq_cb_g0, :freq_cb_g1,
+			:freq_ub_g0, :freq_ub_g1, :freq_pb_g0, :freq_pb_g1, :freq_parochial_g0, :freq_parochial_g1
+		]
+	)
+
+md"""
+#### Figure 4 - Population effects of elder influence
+"""
 end
   ╠═╡ =#
 
